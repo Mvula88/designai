@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import * as fabric from 'fabric'
 import {
   MousePointer,
   Square,
@@ -50,14 +49,22 @@ export function FabricEditor({
   const [strokeWidth, setStrokeWidth] = useState(2)
   const [fontSize, setFontSize] = useState(24)
   const [zoom, setZoom] = useState(100)
+  const [fabricLib, setFabricLib] = useState<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
+  // Load fabric.js dynamically
+  useEffect(() => {
+    import('fabric').then((fabricModule) => {
+      setFabricLib(fabricModule)
+    })
+  }, [])
+
   // Initialize Canvas
   useEffect(() => {
-    if (!canvasRef.current) return
+    if (!canvasRef.current || !fabricLib) return
 
-    const fabricCanvas = new fabric.Canvas(canvasRef.current, {
+    const fabricCanvas = new fabricLib.Canvas(canvasRef.current, {
       width: 800,
       height: 600,
       backgroundColor: '#ffffff',
@@ -69,7 +76,7 @@ export function FabricEditor({
     })
 
     // Custom controls for objects
-    fabric.Object.prototype.set({
+    fabricLib.Object.prototype.set({
       transparentCorners: false,
       cornerColor: '#667eea',
       cornerStrokeColor: '#667eea',
@@ -110,12 +117,12 @@ export function FabricEditor({
     return () => {
       fabricCanvas.dispose()
     }
-  }, [])
+  }, [fabricLib, initialData, onCanvasReady])
 
   // Tool selection
   const selectTool = useCallback(
     (tool: string) => {
-      if (!canvas) return
+      if (!canvas || !fabricLib) return
 
       setSelectedTool(tool)
 
@@ -158,13 +165,13 @@ export function FabricEditor({
 
         case 'pen':
           canvas.isDrawingMode = true
-          canvas.freeDrawingBrush = new fabric.PencilBrush(canvas)
+          canvas.freeDrawingBrush = new fabricLib.PencilBrush(canvas)
           canvas.freeDrawingBrush.width = strokeWidth
           canvas.freeDrawingBrush.color = currentColor
           break
       }
     },
-    [canvas, currentColor, strokeWidth]
+    [canvas, currentColor, strokeWidth, fabricLib]
   )
 
   // Drawing functions
@@ -182,7 +189,7 @@ export function FabricEditor({
       startX = pointer.x
       startY = pointer.y
 
-      rect = new fabric.Rect({
+      rect = new fabricLib.Rect({
         left: startX,
         top: startY,
         width: 0,
@@ -236,7 +243,7 @@ export function FabricEditor({
       startX = pointer.x
       startY = pointer.y
 
-      circle = new fabric.Circle({
+      circle = new fabricLib.Circle({
         left: startX,
         top: startY,
         radius: 0,
@@ -282,7 +289,7 @@ export function FabricEditor({
       isDrawing = true
       const pointer = canvas.getPointer(e.e)
 
-      line = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+      line = new fabricLib.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
         stroke: currentColor,
         strokeWidth: strokeWidth,
         strokeLineCap: 'round',
@@ -315,7 +322,7 @@ export function FabricEditor({
     canvas.on('mouse:down', (e: any) => {
       const pointer = canvas.getPointer(e.e)
 
-      const text = new fabric.IText('Click to edit text', {
+      const text = new fabricLib.IText('Click to edit text', {
         left: pointer.x,
         top: pointer.y,
         fontSize: fontSize,
@@ -416,7 +423,7 @@ export function FabricEditor({
 
     const reader = new FileReader()
     reader.onload = async (event) => {
-      fabric.Image.fromURL(event.target?.result as string).then((img: any) => {
+      fabricLib.Image.fromURL(event.target?.result as string).then((img: any) => {
         const scale = Math.min(400 / (img.width || 1), 400 / (img.height || 1))
         img.scale(scale)
         img.set({
@@ -512,6 +519,17 @@ export function FabricEditor({
       height: 600,
     })
     setZoom(100)
+  }
+
+  if (!fabricLib) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading design editor...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
