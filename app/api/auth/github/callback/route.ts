@@ -125,4 +125,3 @@ async function encryptToken(token: string): Promise<string> {
   const data = encoder.encode(token)
   return Buffer.from(data).toString('base64')
 }
-

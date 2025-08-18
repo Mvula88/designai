@@ -132,7 +132,7 @@ export default function SetupGuide({ onClose }: SetupGuideProps) {
                         Create New OAuth App
                       </p>
                       <p className="mt-1 text-sm text-gray-600">
-                        Click "OAuth Apps" → "New OAuth App"
+                        Click &quot;OAuth Apps&quot; → &quot;New OAuth App&quot;
                       </p>
                     </div>
                   </div>
@@ -276,7 +276,7 @@ GITHUB_CLIENT_SECRET=your_client_secret_here`}
                         Create Access Token
                       </p>
                       <p className="mt-1 text-sm text-gray-600">
-                        Click "Create Token" and name it "DesignOS Playground"
+                        Click &quot;Create Token&quot; and name it &quot;DesignOS Playground&quot;
                       </p>
                     </div>
                   </div>
@@ -344,8 +344,8 @@ VERCEL_TEAM_ID=optional_team_id`}
                         Create Personal Access Token
                       </p>
                       <p className="mt-1 text-sm text-gray-600">
-                        Click "New access token" and describe it as "DesignOS
-                        Playground"
+                        Click &quot;New access token&quot; and describe it as &quot;DesignOS
+                        Playground&quot;
                       </p>
                     </div>
                   </div>
