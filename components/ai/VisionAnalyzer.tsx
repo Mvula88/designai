@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { analyzeImageWithClaude } from '@/lib/anthropic/vision'
 import { Upload, Loader2, Eye, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { useDropzone } from 'react-dropzone'
@@ -29,12 +28,30 @@ export function VisionAnalyzer({
     // Analyze image
     setAnalyzing(true)
     try {
-      // Upload to temporary storage or use data URL
-      const result = await analyzeImageWithClaude(
-        URL.createObjectURL(file),
-        'design_archaeology'
-      )
+      // Convert to base64 for API
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(file)
+      })
 
+      // Call API route instead of direct function
+      const response = await fetch('/api/ai/analyze-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageUrl: base64,
+          analysisType: 'design_archaeology',
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze image')
+      }
+
+      const result = await response.json()
       setAnalysisResult(result)
 
       if (result.fabricObjects) {

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { interpretDesignCommand } from '@/lib/anthropic/commands'
 import { Loader2, Sparkles, Send, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -29,12 +28,25 @@ export function ClaudeAssistant({
 
     try {
       const canvasState = canvas.toJSON()
-      const command = await interpretDesignCommand(
-        userMessage,
-        canvasState,
-        null
-      )
+      
+      // Call API route instead of direct function
+      const response = await fetch('/api/ai/interpret-command', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userInput: userMessage,
+          canvasState,
+          userPreferences: null,
+        }),
+      })
 
+      if (!response.ok) {
+        throw new Error('Failed to interpret command')
+      }
+
+      const command = await response.json()
       onCommand(command)
 
       setHistory((prev) => [
