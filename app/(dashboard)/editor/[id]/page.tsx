@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react'
 import { FabricEditor } from '@/components/canvas/FabricEditor'
 import { ClaudeAssistant } from '@/components/ai/ClaudeAssistant'
 import { VisionAnalyzer } from '@/components/ai/VisionAnalyzer'
+import { DesignToCodeBridge } from '@/components/canvas/DesignToCodeBridge'
 import { createClient } from '@/lib/supabase/client'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 
 export default function EditorPage() {
   const params = useParams()
+  const router = useRouter()
   const designId = params.id as string
   const [canvas, setCanvas] = useState<any>(null)
   const [designData, setDesignData] = useState<any>(null)
@@ -113,6 +115,39 @@ export default function EditorPage() {
     toast.success('AI command applied')
   }
 
+  const handleDeploy = async (filesJson: string) => {
+    try {
+      // Save the design first
+      if (designId && designId !== 'new') {
+        await handleCanvasSave(canvas.toJSON())
+      }
+
+      // Create a playground from the design
+      const { data: playground, error } = await supabase
+        .from('playgrounds')
+        .insert({
+          name: designData?.title || 'Deployed Design',
+          description: 'Auto-generated from visual design',
+          current_code: JSON.parse(filesJson),
+          framework: 'nextjs',
+          language: 'typescript',
+          styling: 'tailwind',
+          user_id: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Navigate to playground for deployment
+      router.push(`/playground/${playground.id}`)
+      toast.success('Ready to deploy! Connect your GitHub/Vercel account.')
+    } catch (error) {
+      console.error('Deployment error:', error)
+      toast.error('Failed to prepare deployment')
+    }
+  }
+
   return (
     <div className="flex h-screen flex-col bg-gray-50">
       {/* Top Bar */}
@@ -155,13 +190,21 @@ export default function EditorPage() {
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Canvas Editor */}
-        <div className="flex-1">
+        <div className="flex-1 relative">
           <FabricEditor
             designId={designId}
             initialData={designData?.canvas_data}
             onCanvasReady={handleCanvasReady}
             onSave={handleCanvasSave}
           />
+          
+          {/* Design to Code Bridge - Floating UI */}
+          {canvas && (
+            <DesignToCodeBridge 
+              canvas={canvas}
+              onDeploy={handleDeploy}
+            />
+          )}
         </div>
 
         {/* AI Panel */}
