@@ -21,6 +21,8 @@ import {
   Wand2,
   LogOut,
   Settings,
+  Code2,
+  Rocket,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -352,7 +354,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="mb-8 grid gap-4 md:grid-cols-3">
+        <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {/* Design Archaeology Card */}
           <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 p-6 text-white transition-transform hover:scale-105">
             <div className="relative z-10">
@@ -435,6 +437,27 @@ export default function DashboardPage() {
                 <Eye className="h-4 w-4" />
                 Analyze Now
               </button>
+            </div>
+            <div className="absolute -bottom-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
+          </div>
+
+          {/* AI Playground Card */}
+          <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 p-6 text-white transition-transform hover:scale-105">
+            <div className="relative z-10">
+              <div className="mb-4 inline-flex rounded-lg bg-white/20 p-3">
+                <Code2 className="h-6 w-6" />
+              </div>
+              <h3 className="mb-2 text-lg font-bold">AI Playground</h3>
+              <p className="mb-4 text-sm opacity-90">
+                Build full-stack apps with AI. Deploy instantly to production
+              </p>
+              <Link
+                href="/playground"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm hover:bg-white/30"
+              >
+                <Rocket className="h-4 w-4" />
+                Launch Playground
+              </Link>
             </div>
             <div className="absolute -bottom-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
           </div>
