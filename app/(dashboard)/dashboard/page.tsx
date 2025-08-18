@@ -20,6 +20,9 @@ import {
   Sparkles,
   Upload,
   Wand2,
+  LogOut,
+  User,
+  Settings,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -37,6 +40,15 @@ interface Design {
   view_count: number
 }
 
+interface UserProfile {
+  id: string
+  email: string
+  username?: string
+  full_name?: string
+  avatar_url?: string
+  credits?: number
+}
+
 export default function DashboardPage() {
   const [designs, setDesigns] = useState<Design[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,8 +57,9 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<
     'all' | 'recent' | 'starred' | 'templates'
   >('all')
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<UserProfile | null>(null)
   const [creatingDesign, setCreatingDesign] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -61,14 +74,65 @@ export default function DashboardPage() {
   }, [filter, user])
 
   const loadUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
+    try {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      
+      if (!authUser) {
+        router.push('/login')
+        return
+      }
+
+      // Get or create user profile
+      let { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+
+      // If no profile exists, create one
+      if (profileError || !profile) {
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authUser.id,
+            username: authUser.email?.split('@')[0],
+            full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
+            avatar_url: authUser.user_metadata?.avatar_url || '',
+            credits: 100
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Error creating profile:', createError)
+          // Continue with basic user data even if profile creation fails
+          setUser({
+            id: authUser.id,
+            email: authUser.email || '',
+            username: authUser.email?.split('@')[0],
+            credits: 100
+          })
+        } else {
+          profile = newProfile
+        }
+      }
+
+      if (profile) {
+        setUser({
+          id: authUser.id,
+          email: authUser.email || '',
+          username: profile.username,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          credits: profile.credits
+        })
+      }
+    } catch (error) {
+      console.error('Error loading user:', error)
       router.push('/login')
-      return
     }
-    setUser(user)
   }
 
   const loadDesigns = async () => {
@@ -121,14 +185,17 @@ export default function DashboardPage() {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Database error:', error)
+        throw error
+      }
 
       if (data && data.id) {
         router.push(`/editor/${data.id}`)
       }
     } catch (error: any) {
       console.error('Failed to create design:', error)
-      toast.error('Failed to create design: ' + error.message)
+      toast.error('Failed to create design: ' + (error.message || 'Unknown error'))
     } finally {
       setCreatingDesign(false)
     }
@@ -174,6 +241,15 @@ export default function DashboardPage() {
     }
   }
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      router.push('/login')
+    } catch (error) {
+      toast.error('Failed to sign out')
+    }
+  }
+
   const filteredDesigns = designs.filter((design) =>
     design.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -187,26 +263,76 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">My Designs</h1>
               <p className="text-sm text-gray-600">
-                Welcome back, {user?.email}
+                Welcome back, {user?.full_name || user?.username || user?.email}
               </p>
             </div>
-            <button
-              onClick={createNewDesign}
-              disabled={creatingDesign || !user}
-              className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-            >
-              {creatingDesign ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-5 w-5" />
-                  New Design
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={createNewDesign}
+                disabled={creatingDesign || !user}
+                className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {creatingDesign ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-5 w-5" />
+                    New Design
+                  </>
+                )}
+              </button>
+
+              {/* User Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50"
+                >
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt="Avatar"
+                      className="h-8 w-8 rounded-full"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white">
+                      {user?.email?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <span className="text-sm font-medium">
+                    {user?.username || user?.email?.split('@')[0]}
+                  </span>
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg bg-white py-2 shadow-lg">
+                    <div className="border-b px-4 py-2">
+                      <p className="text-sm font-medium">{user?.email}</p>
+                      <p className="text-xs text-gray-500">
+                        Credits: {user?.credits || 0}
+                      </p>
+                    </div>
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -240,10 +366,10 @@ export default function DashboardPage() {
                     toast.error('Please sign in first')
                     return
                   }
-                  // Create a new design first, then navigate to editor with import tab open
                   createNewDesign()
                 }}
-                className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm hover:bg-white/30"
+                disabled={creatingDesign}
+                className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm hover:bg-white/30 disabled:opacity-50"
               >
                 <Sparkles className="h-4 w-4" />
                 Try Now
@@ -271,7 +397,8 @@ export default function DashboardPage() {
                   }
                   createNewDesign()
                 }}
-                className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm hover:bg-white/30"
+                disabled={creatingDesign}
+                className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm hover:bg-white/30 disabled:opacity-50"
               >
                 <Wand2 className="h-4 w-4" />
                 Get Started
@@ -298,7 +425,8 @@ export default function DashboardPage() {
                   }
                   createNewDesign()
                 }}
-                className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm hover:bg-white/30"
+                disabled={creatingDesign}
+                className="inline-flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm hover:bg-white/30 disabled:opacity-50"
               >
                 <Eye className="h-4 w-4" />
                 Analyze Now
