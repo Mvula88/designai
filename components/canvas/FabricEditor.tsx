@@ -117,7 +117,7 @@ export function FabricEditor({
     return () => {
       fabricCanvas.dispose()
     }
-  }, [fabricLib, initialData, onCanvasReady])
+  }, [fabricLib]) // Only re-initialize when fabricLib loads
 
   // Tool selection
   const selectTool = useCallback(
@@ -179,7 +179,7 @@ export function FabricEditor({
     if (!canvas) return
 
     let isDrawing = false
-    let rect: fabric.Rect | null = null
+    let rect: any = null
     let startX = 0,
       startY = 0
 
@@ -233,7 +233,7 @@ export function FabricEditor({
     if (!canvas) return
 
     let isDrawing = false
-    let circle: fabric.Circle | null = null
+    let circle: any = null
     let startX = 0,
       startY = 0
 
@@ -283,7 +283,7 @@ export function FabricEditor({
     if (!canvas) return
 
     let isDrawing = false
-    let line: fabric.Line | null = null
+    let line: any = null
 
     canvas.on('mouse:down', (e: any) => {
       isDrawing = true
@@ -361,7 +361,7 @@ export function FabricEditor({
     if (activeObjects.length === 0) return
 
     activeObjects.forEach((obj: any) => {
-      obj.clone((cloned: fabric.Object) => {
+      obj.clone((cloned: any) => {
         cloned.set({
           left: (cloned.left || 0) + 20,
           top: (cloned.top || 0) + 20,
