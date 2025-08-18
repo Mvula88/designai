@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { SimpleFabricEditor } from '@/components/canvas/SimpleFabricEditor'
+import { AdvancedFabricEditor } from '@/components/canvas/AdvancedFabricEditor'
 import { ClaudeAssistant } from '@/components/ai/ClaudeAssistant'
 import { VisionAnalyzer } from '@/components/ai/VisionAnalyzer'
 import { DesignToCodeBridge } from '@/components/canvas/DesignToCodeBridge'
@@ -191,7 +191,7 @@ export default function EditorPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Canvas Editor */}
         <div className="flex-1 relative">
-          <SimpleFabricEditor
+          <AdvancedFabricEditor
             designId={designId}
             initialData={designData?.canvas_data}
             onCanvasReady={handleCanvasReady}
