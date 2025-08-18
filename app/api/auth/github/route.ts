@@ -3,16 +3,22 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const playgroundId = searchParams.get('playground_id')
-  
+
   if (!playgroundId) {
-    return NextResponse.json({ error: 'Missing playground_id' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Missing playground_id' },
+      { status: 400 }
+    )
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/github/callback`
-  
+
   if (!clientId) {
-    return NextResponse.json({ error: 'GitHub OAuth not configured' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'GitHub OAuth not configured' },
+      { status: 500 }
+    )
   }
 
   // GitHub OAuth authorization URL
@@ -24,3 +30,4 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.redirect(authUrl.toString())
 }
+

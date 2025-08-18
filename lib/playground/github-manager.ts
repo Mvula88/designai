@@ -14,8 +14,8 @@ export class GitHubManager {
     const response = await fetch('https://api.github.com/user/repos', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.config.accessToken}`,
-        'Accept': 'application/vnd.github.v3+json',
+        Authorization: `Bearer ${this.config.accessToken}`,
+        Accept: 'application/vnd.github.v3+json',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -46,8 +46,8 @@ export class GitHubManager {
       `https://api.github.com/repos/${this.config.username}/${repo}/contents/${path}?ref=${branch}`,
       {
         headers: {
-          'Authorization': `Bearer ${this.config.accessToken}`,
-          'Accept': 'application/vnd.github.v3+json',
+          Authorization: `Bearer ${this.config.accessToken}`,
+          Accept: 'application/vnd.github.v3+json',
         },
       }
     )
@@ -64,8 +64,8 @@ export class GitHubManager {
       {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${this.config.accessToken}`,
-          'Accept': 'application/vnd.github.v3+json',
+          Authorization: `Bearer ${this.config.accessToken}`,
+          Accept: 'application/vnd.github.v3+json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -88,6 +88,7 @@ export class GitHubManager {
   async deployToGitHub(
     projectName: string,
     files: Record<string, string>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     commitMessage = 'Deploy from DesignOS Playground'
   ) {
     try {
@@ -118,3 +119,4 @@ export class GitHubManager {
     }
   }
 }
+

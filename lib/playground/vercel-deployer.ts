@@ -15,7 +15,7 @@ export class VercelDeployer {
     const response = await fetch(`${this.baseUrl}/v9/projects`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.config.apiToken}`,
+        Authorization: `Bearer ${this.config.apiToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -28,7 +28,9 @@ export class VercelDeployer {
 
     if (!response.ok) {
       const error = await response.json()
-      throw new Error(`Failed to create Vercel project: ${error.error?.message}`)
+      throw new Error(
+        `Failed to create Vercel project: ${error.error?.message}`
+      )
     }
 
     return await response.json()
@@ -48,7 +50,7 @@ export class VercelDeployer {
     const response = await fetch(`${this.baseUrl}/v13/deployments`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.config.apiToken}`,
+        Authorization: `Bearer ${this.config.apiToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -77,21 +79,25 @@ export class VercelDeployer {
     try {
       // Ensure package.json exists
       if (!files['package.json']) {
-        files['package.json'] = JSON.stringify({
-          name: projectName.toLowerCase().replace(/\s+/g, '-'),
-          version: '1.0.0',
-          private: true,
-          scripts: {
-            dev: 'next dev',
-            build: 'next build',
-            start: 'next start',
+        files['package.json'] = JSON.stringify(
+          {
+            name: projectName.toLowerCase().replace(/\s+/g, '-'),
+            version: '1.0.0',
+            private: true,
+            scripts: {
+              dev: 'next dev',
+              build: 'next build',
+              start: 'next start',
+            },
+            dependencies: {
+              next: 'latest',
+              react: 'latest',
+              'react-dom': 'latest',
+            },
           },
-          dependencies: {
-            next: 'latest',
-            react: 'latest',
-            'react-dom': 'latest',
-          },
-        }, null, 2)
+          null,
+          2
+        )
       }
 
       // Create deployment
@@ -110,11 +116,14 @@ export class VercelDeployer {
   }
 
   async getDeploymentStatus(deploymentId: string) {
-    const response = await fetch(`${this.baseUrl}/v13/deployments/${deploymentId}`, {
-      headers: {
-        'Authorization': `Bearer ${this.config.apiToken}`,
-      },
-    })
+    const response = await fetch(
+      `${this.baseUrl}/v13/deployments/${deploymentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.config.apiToken}`,
+        },
+      }
+    )
 
     if (!response.ok) {
       throw new Error('Failed to get deployment status')
@@ -127,3 +136,4 @@ export class VercelDeployer {
     }
   }
 }
+

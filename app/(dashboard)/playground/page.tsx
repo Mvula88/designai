@@ -55,7 +55,9 @@ export default function PlaygroundPage() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filter, setFilter] = useState<'all' | 'recent' | 'popular' | 'templates'>('all')
+  const [filter, setFilter] = useState<
+    'all' | 'recent' | 'popular' | 'templates'
+  >('all')
   const [creatingPlayground, setCreatingPlayground] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -68,7 +70,9 @@ export default function PlaygroundPage() {
   const loadPlaygrounds = async () => {
     setLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
         return
@@ -117,7 +121,9 @@ export default function PlaygroundPage() {
   const createNewPlayground = async (templateId?: string) => {
     setCreatingPlayground(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
       let starterCode = {}
@@ -126,7 +132,7 @@ export default function PlaygroundPage() {
       let framework = 'nextjs'
 
       if (templateId) {
-        const template = templates.find(t => t.id === templateId)
+        const template = templates.find((t) => t.id === templateId)
         if (template) {
           const { data: templateData } = await supabase
             .from('playground_templates')
@@ -172,10 +178,7 @@ export default function PlaygroundPage() {
     if (!confirm('Are you sure you want to delete this playground?')) return
 
     try {
-      const { error } = await supabase
-        .from('playgrounds')
-        .delete()
-        .eq('id', id)
+      const { error } = await supabase.from('playgrounds').delete().eq('id', id)
 
       if (error) throw error
 
@@ -186,9 +189,10 @@ export default function PlaygroundPage() {
     }
   }
 
-  const filteredPlaygrounds = playgrounds.filter((playground) =>
-    playground.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    playground.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPlaygrounds = playgrounds.filter(
+    (playground) =>
+      playground.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      playground.description?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
@@ -203,7 +207,9 @@ export default function PlaygroundPage() {
                   <Code2 className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">AI Playground</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    AI Playground
+                  </h1>
                   <p className="text-sm text-gray-600">
                     Build full-stack apps with AI in seconds
                   </p>
@@ -240,8 +246,9 @@ export default function PlaygroundPage() {
                 From idea to deployed app in 60 seconds
               </h2>
               <p className="mb-6 text-lg opacity-90">
-                Describe your app, and watch as AI builds it with a real backend, 
-                auth, and database. Deploy instantly to Vercel or Netlify.
+                Describe your app, and watch as AI builds it with a real
+                backend, auth, and database. Deploy instantly to Vercel or
+                Netlify.
               </p>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-2">
@@ -296,7 +303,9 @@ export default function PlaygroundPage() {
         {/* Templates Section */}
         {templates.length > 0 && (
           <div className="mb-8">
-            <h2 className="mb-4 text-xl font-bold text-gray-900">Start with a template</h2>
+            <h2 className="mb-4 text-xl font-bold text-gray-900">
+              Start with a template
+            </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {templates.map((template) => (
                 <button
@@ -314,8 +323,12 @@ export default function PlaygroundPage() {
                       </span>
                     )}
                   </div>
-                  <h3 className="mb-1 font-semibold text-gray-900">{template.name}</h3>
-                  <p className="mb-3 text-sm text-gray-600">{template.description}</p>
+                  <h3 className="mb-1 font-semibold text-gray-900">
+                    {template.name}
+                  </h3>
+                  <p className="mb-3 text-sm text-gray-600">
+                    {template.description}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {template.tags.slice(0, 3).map((tag) => (
                       <span
@@ -371,7 +384,9 @@ export default function PlaygroundPage() {
         ) : filteredPlaygrounds.length === 0 ? (
           <div className="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white">
             <FolderOpen className="mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="mb-2 text-lg font-medium text-gray-900">No playgrounds yet</h3>
+            <h3 className="mb-2 text-lg font-medium text-gray-900">
+              No playgrounds yet
+            </h3>
             <p className="mb-4 text-sm text-gray-600">
               Create your first AI-powered app
             </p>

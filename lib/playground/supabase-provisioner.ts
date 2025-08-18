@@ -16,12 +16,12 @@ interface ProvisioningOptions {
 
 export async function generateSupabaseSchema(options: ProvisioningOptions) {
   const { requirements, features } = options
-  
+
   // Build a prompt for Claude to generate the schema
   const prompt = `Based on these requirements, generate a complete Supabase database schema:
 
 Requirements:
-${requirements.map(r => `- ${r}`).join('\n')}
+${requirements.map((r) => `- ${r}`).join('\n')}
 
 Features needed:
 - Authentication: ${features.hasAuth}
@@ -74,7 +74,8 @@ Return the result as a JSON object with this structure:
       model: 'claude-3-sonnet-20240229',
       max_tokens: 4096,
       temperature: 0.5,
-      system: 'You are a Supabase expert. Generate optimal database schemas with proper security and performance considerations.',
+      system:
+        'You are a Supabase expert. Generate optimal database schemas with proper security and performance considerations.',
       messages: [
         {
           role: 'user',
@@ -94,7 +95,7 @@ Return the result as a JSON object with this structure:
     }
   } catch (error) {
     console.error('Failed to generate schema:', error)
-    
+
     // Return a default schema as fallback
     return generateDefaultSchema(requirements)
   }
@@ -110,7 +111,7 @@ function generateDefaultSchema(requirements: string[]) {
       settings: {},
     },
   }
-  
+
   // Always include a profiles table
   schema.tables.push({
     name: 'profiles',
@@ -127,11 +128,21 @@ function generateDefaultSchema(requirements: string[]) {
       { name: 'username', type: 'text', nullable: true },
       { name: 'full_name', type: 'text', nullable: true },
       { name: 'avatar_url', type: 'text', nullable: true },
-      { name: 'created_at', type: 'timestamptz', nullable: false, default: 'NOW()' },
-      { name: 'updated_at', type: 'timestamptz', nullable: false, default: 'NOW()' },
+      {
+        name: 'created_at',
+        type: 'timestamptz',
+        nullable: false,
+        default: 'NOW()',
+      },
+      {
+        name: 'updated_at',
+        type: 'timestamptz',
+        nullable: false,
+        default: 'NOW()',
+      },
     ],
   })
-  
+
   // Add RLS policies for profiles
   schema.policies.push({
     name: 'Users can view own profile',
@@ -139,17 +150,17 @@ function generateDefaultSchema(requirements: string[]) {
     sql: `CREATE POLICY "Users can view own profile" ON public.profiles
       FOR SELECT USING (auth.uid() = id)`,
   })
-  
+
   schema.policies.push({
     name: 'Users can update own profile',
     table: 'profiles',
     sql: `CREATE POLICY "Users can update own profile" ON public.profiles
       FOR UPDATE USING (auth.uid() = id)`,
   })
-  
+
   // Check for specific requirements and add relevant tables
   const reqString = requirements.join(' ').toLowerCase()
-  
+
   if (reqString.includes('task') || reqString.includes('todo')) {
     schema.tables.push({
       name: 'tasks',
@@ -165,31 +176,46 @@ function generateDefaultSchema(requirements: string[]) {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
       )`,
       columns: [
-        { name: 'id', type: 'uuid', nullable: false, default: 'uuid_generate_v4()' },
+        {
+          name: 'id',
+          type: 'uuid',
+          nullable: false,
+          default: 'uuid_generate_v4()',
+        },
         { name: 'user_id', type: 'uuid', nullable: false },
         { name: 'title', type: 'text', nullable: false },
         { name: 'description', type: 'text', nullable: true },
         { name: 'status', type: 'text', nullable: false, default: 'pending' },
         { name: 'priority', type: 'text', nullable: false, default: 'medium' },
         { name: 'due_date', type: 'timestamptz', nullable: true },
-        { name: 'created_at', type: 'timestamptz', nullable: false, default: 'NOW()' },
-        { name: 'updated_at', type: 'timestamptz', nullable: false, default: 'NOW()' },
+        {
+          name: 'created_at',
+          type: 'timestamptz',
+          nullable: false,
+          default: 'NOW()',
+        },
+        {
+          name: 'updated_at',
+          type: 'timestamptz',
+          nullable: false,
+          default: 'NOW()',
+        },
       ],
     })
-    
+
     schema.policies.push({
       name: 'Users can manage own tasks',
       table: 'tasks',
       sql: `CREATE POLICY "Users can manage own tasks" ON public.tasks
         FOR ALL USING (auth.uid() = user_id)`,
     })
-    
+
     schema.indexes.push({
       name: 'idx_tasks_user_id',
       sql: 'CREATE INDEX idx_tasks_user_id ON public.tasks(user_id)',
     })
   }
-  
+
   if (reqString.includes('team') || reqString.includes('collaboration')) {
     schema.tables.push({
       name: 'teams',
@@ -201,14 +227,24 @@ function generateDefaultSchema(requirements: string[]) {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
       )`,
       columns: [
-        { name: 'id', type: 'uuid', nullable: false, default: 'uuid_generate_v4()' },
+        {
+          name: 'id',
+          type: 'uuid',
+          nullable: false,
+          default: 'uuid_generate_v4()',
+        },
         { name: 'name', type: 'text', nullable: false },
         { name: 'description', type: 'text', nullable: true },
         { name: 'owner_id', type: 'uuid', nullable: false },
-        { name: 'created_at', type: 'timestamptz', nullable: false, default: 'NOW()' },
+        {
+          name: 'created_at',
+          type: 'timestamptz',
+          nullable: false,
+          default: 'NOW()',
+        },
       ],
     })
-    
+
     schema.tables.push({
       name: 'team_members',
       sql: `CREATE TABLE public.team_members (
@@ -220,14 +256,24 @@ function generateDefaultSchema(requirements: string[]) {
         UNIQUE(team_id, user_id)
       )`,
       columns: [
-        { name: 'id', type: 'uuid', nullable: false, default: 'uuid_generate_v4()' },
+        {
+          name: 'id',
+          type: 'uuid',
+          nullable: false,
+          default: 'uuid_generate_v4()',
+        },
         { name: 'team_id', type: 'uuid', nullable: false },
         { name: 'user_id', type: 'uuid', nullable: false },
         { name: 'role', type: 'text', nullable: false, default: 'member' },
-        { name: 'joined_at', type: 'timestamptz', nullable: false, default: 'NOW()' },
+        {
+          name: 'joined_at',
+          type: 'timestamptz',
+          nullable: false,
+          default: 'NOW()',
+        },
       ],
     })
-    
+
     schema.policies.push({
       name: 'Team members can view team',
       table: 'teams',
@@ -242,7 +288,7 @@ function generateDefaultSchema(requirements: string[]) {
         )`,
     })
   }
-  
+
   if (reqString.includes('comment') || reqString.includes('message')) {
     schema.tables.push({
       name: 'comments',
@@ -256,23 +302,38 @@ function generateDefaultSchema(requirements: string[]) {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
       )`,
       columns: [
-        { name: 'id', type: 'uuid', nullable: false, default: 'uuid_generate_v4()' },
+        {
+          name: 'id',
+          type: 'uuid',
+          nullable: false,
+          default: 'uuid_generate_v4()',
+        },
         { name: 'user_id', type: 'uuid', nullable: false },
         { name: 'content', type: 'text', nullable: false },
         { name: 'parent_id', type: 'uuid', nullable: true },
         { name: 'parent_type', type: 'text', nullable: true },
-        { name: 'created_at', type: 'timestamptz', nullable: false, default: 'NOW()' },
-        { name: 'updated_at', type: 'timestamptz', nullable: false, default: 'NOW()' },
+        {
+          name: 'created_at',
+          type: 'timestamptz',
+          nullable: false,
+          default: 'NOW()',
+        },
+        {
+          name: 'updated_at',
+          type: 'timestamptz',
+          nullable: false,
+          default: 'NOW()',
+        },
       ],
     })
-    
+
     schema.policies.push({
       name: 'Users can view comments',
       table: 'comments',
       sql: `CREATE POLICY "Users can view comments" ON public.comments
         FOR SELECT USING (true)`,
     })
-    
+
     schema.policies.push({
       name: 'Users can create comments',
       table: 'comments',
@@ -280,6 +341,6 @@ function generateDefaultSchema(requirements: string[]) {
         FOR INSERT WITH CHECK (auth.uid() = user_id)`,
     })
   }
-  
+
   return schema
 }

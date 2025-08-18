@@ -3,21 +3,25 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const playgroundId = searchParams.get('playground_id')
-  
+
   if (!playgroundId) {
-    return NextResponse.json({ error: 'Missing playground_id' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Missing playground_id' },
+      { status: 400 }
+    )
   }
 
   // For Vercel, users need to:
   // 1. Create a personal access token in their Vercel dashboard
   // 2. Enter it manually in the integrations panel
-  
+
   // Since Vercel doesn't have a traditional OAuth flow for personal tokens,
   // we'll redirect to the Vercel token creation page
   const vercelTokenUrl = 'https://vercel.com/account/tokens'
-  
+
   // Return instructions page
-  return new NextResponse(`
+  return new NextResponse(
+    `
     <html>
       <head>
         <title>Connect Vercel</title>
@@ -152,7 +156,9 @@ export async function GET(request: NextRequest) {
         </script>
       </body>
     </html>
-  `, {
-    headers: { 'Content-Type': 'text/html' },
-  })
+  `,
+    {
+      headers: { 'Content-Type': 'text/html' },
+    }
+  )
 }

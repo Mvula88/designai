@@ -38,9 +38,24 @@ const SERVICES = [
     description: 'Database, Auth, Storage',
     color: 'green',
     configFields: [
-      { name: 'project_url', label: 'Project URL', type: 'text', placeholder: 'https://xxx.supabase.co' },
-      { name: 'anon_key', label: 'Anon Key', type: 'password', placeholder: 'eyJhbGci...' },
-      { name: 'service_key', label: 'Service Key (optional)', type: 'password', placeholder: 'eyJhbGci...' },
+      {
+        name: 'project_url',
+        label: 'Project URL',
+        type: 'text',
+        placeholder: 'https://xxx.supabase.co',
+      },
+      {
+        name: 'anon_key',
+        label: 'Anon Key',
+        type: 'password',
+        placeholder: 'eyJhbGci...',
+      },
+      {
+        name: 'service_key',
+        label: 'Service Key (optional)',
+        type: 'password',
+        placeholder: 'eyJhbGci...',
+      },
     ],
   },
   {
@@ -66,7 +81,12 @@ const SERVICES = [
     description: 'Static site hosting',
     color: 'teal',
     configFields: [
-      { name: 'access_token', label: 'Access Token', type: 'password', placeholder: 'Your Netlify token' },
+      {
+        name: 'access_token',
+        label: 'Access Token',
+        type: 'password',
+        placeholder: 'Your Netlify token',
+      },
     ],
   },
 ]
@@ -94,7 +114,9 @@ export default function IntegrationsPanel({
       setLoading(serviceType)
       try {
         // Initiate OAuth flow
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         if (!user) throw new Error('Not authenticated')
 
         // Open OAuth window
@@ -107,17 +129,23 @@ export default function IntegrationsPanel({
         // Listen for OAuth completion or manual token entry
         const handleMessage = async (event: MessageEvent) => {
           // Handle GitHub OAuth completion
-          if (event.data.type === 'oauth_complete' && event.data.service === serviceType) {
+          if (
+            event.data.type === 'oauth_complete' &&
+            event.data.service === serviceType
+          ) {
             window.removeEventListener('message', handleMessage)
             await onIntegrationsChange()
             toast.success(`Connected to ${service.name}`)
             setLoading(null)
           }
-          
+
           // Handle Vercel manual token entry
-          if (event.data.type === 'vercel_token' && event.data.playgroundId === playgroundId) {
+          if (
+            event.data.type === 'vercel_token' &&
+            event.data.playgroundId === playgroundId
+          ) {
             window.removeEventListener('message', handleMessage)
-            
+
             // Save the Vercel token
             const { error } = await supabase
               .from('playground_integrations')
@@ -129,7 +157,7 @@ export default function IntegrationsPanel({
                 config: {},
                 status: 'connected',
               })
-            
+
             if (!error) {
               await onIntegrationsChange()
               toast.success('Connected to Vercel')
@@ -140,7 +168,7 @@ export default function IntegrationsPanel({
           }
         }
         window.addEventListener('message', handleMessage)
-        
+
         // Clean up if window is closed
         const checkClosed = setInterval(() => {
           if (authWindow?.closed) {
@@ -166,23 +194,25 @@ export default function IntegrationsPanel({
 
     setLoading(serviceType)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
-      const { error } = await supabase
-        .from('playground_integrations')
-        .upsert({
-          playground_id: playgroundId,
-          user_id: user.id,
-          service_type: serviceType,
-          config,
-          status: 'connected',
-        })
+      const { error } = await supabase.from('playground_integrations').upsert({
+        playground_id: playgroundId,
+        user_id: user.id,
+        service_type: serviceType,
+        config,
+        status: 'connected',
+      })
 
       if (error) throw error
 
       await onIntegrationsChange()
-      toast.success(`Connected to ${SERVICES.find((s) => s.id === serviceType)?.name}`)
+      toast.success(
+        `Connected to ${SERVICES.find((s) => s.id === serviceType)?.name}`
+      )
       setConfiguring(null)
       setConfigs({ ...configs, [serviceType]: {} })
     } catch (error) {
@@ -194,7 +224,12 @@ export default function IntegrationsPanel({
   }
 
   const disconnectService = async (serviceType: string) => {
-    if (!confirm(`Disconnect ${SERVICES.find((s) => s.id === serviceType)?.name}?`)) return
+    if (
+      !confirm(
+        `Disconnect ${SERVICES.find((s) => s.id === serviceType)?.name}?`
+      )
+    )
+      return
 
     setLoading(serviceType)
     try {
@@ -240,7 +275,7 @@ export default function IntegrationsPanel({
 
       const data = await response.json()
       toast.success('Supabase resources provisioned successfully!')
-      
+
       // Show what was created
       if (data.resources) {
         console.log('Created resources:', data.resources)
@@ -337,11 +372,11 @@ export default function IntegrationsPanel({
 
                 {/* Supabase Auto-Provision Button */}
                 {service.id === 'supabase' && isConnected && (
-                  <div className="mt-3 pt-3 border-t border-gray-800">
+                  <div className="mt-3 border-t border-gray-800 pt-3">
                     <button
                       onClick={autoProvisionSupabase}
                       disabled={loading === 'supabase_provision'}
-                      className="w-full flex items-center justify-center gap-2 rounded-lg bg-green-600/20 px-3 py-2 text-sm text-green-400 hover:bg-green-600/30 disabled:opacity-50"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600/20 px-3 py-2 text-sm text-green-400 hover:bg-green-600/30 disabled:opacity-50"
                     >
                       {loading === 'supabase_provision' ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -385,7 +420,7 @@ export default function IntegrationsPanel({
                         className="flex-1 rounded-lg bg-purple-600 px-3 py-2 text-sm text-white hover:bg-purple-700 disabled:opacity-50"
                       >
                         {isLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                          <Loader2 className="mx-auto h-4 w-4 animate-spin" />
                         ) : (
                           'Save'
                         )}
@@ -412,11 +447,9 @@ export default function IntegrationsPanel({
       <div className="border-t border-gray-800 p-4">
         <div className="rounded-lg bg-gray-900 p-3">
           <div className="flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5" />
+            <AlertCircle className="mt-0.5 h-4 w-4 text-yellow-500" />
             <div className="text-xs text-gray-400">
-              <p className="mb-1">
-                Connect services to unlock full features:
-              </p>
+              <p className="mb-1">Connect services to unlock full features:</p>
               <ul className="space-y-1 text-gray-500">
                 <li>• Supabase: Database, auth, storage</li>
                 <li>• GitHub: Version control, collaboration</li>

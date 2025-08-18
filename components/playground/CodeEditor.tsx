@@ -27,7 +27,9 @@ export default function CodeEditor({
   onFileSelect,
   onCodeChange,
 }: CodeEditorProps) {
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['app', 'components']))
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    new Set(['app', 'components'])
+  )
   const [showNewFileModal, setShowNewFileModal] = useState(false)
   const [newFileName, setNewFileName] = useState('')
 
@@ -36,11 +38,11 @@ export default function CodeEditor({
 
   function organizeFilesIntoTree(files: Record<string, string>) {
     const tree: any = {}
-    
+
     Object.keys(files).forEach((path) => {
       const parts = path.split('/')
       let current = tree
-      
+
       parts.forEach((part, index) => {
         if (index === parts.length - 1) {
           // It's a file
@@ -54,7 +56,7 @@ export default function CodeEditor({
         }
       })
     })
-    
+
     return tree
   }
 
@@ -70,8 +72,10 @@ export default function CodeEditor({
 
   const createNewFile = () => {
     if (!newFileName) return
-    
-    const fullPath = newFileName.includes('/') ? newFileName : `app/${newFileName}`
+
+    const fullPath = newFileName.includes('/')
+      ? newFileName
+      : `app/${newFileName}`
     onCodeChange(fullPath, '')
     onFileSelect(fullPath)
     setNewFileName('')
@@ -82,7 +86,7 @@ export default function CodeEditor({
     if (confirm(`Delete ${file}?`)) {
       const newFiles = { ...files }
       delete newFiles[file]
-      
+
       // Select another file if the deleted one was selected
       if (selectedFile === file) {
         const remainingFiles = Object.keys(newFiles)
@@ -114,24 +118,26 @@ export default function CodeEditor({
   const renderFileTree = (tree: any, path = '') => {
     return Object.entries(tree).map(([name, item]: [string, any]) => {
       const fullPath = path ? `${path}/${name}` : name
-      
+
       if (item.type === 'file') {
         return (
           <div
             key={item.path}
-            className={`flex items-center gap-2 px-2 py-1 hover:bg-gray-800 cursor-pointer group ${
-              selectedFile === item.path ? 'bg-gray-800 text-white' : 'text-gray-400'
+            className={`group flex cursor-pointer items-center gap-2 px-2 py-1 hover:bg-gray-800 ${
+              selectedFile === item.path
+                ? 'bg-gray-800 text-white'
+                : 'text-gray-400'
             }`}
             onClick={() => onFileSelect(item.path)}
           >
             <File className="h-4 w-4" />
-            <span className="text-sm flex-1">{name}</span>
+            <span className="flex-1 text-sm">{name}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 deleteFile(item.path)
               }}
-              className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
+              className="text-gray-500 opacity-0 hover:text-red-400 group-hover:opacity-100"
             >
               <X className="h-3 w-3" />
             </button>
@@ -142,7 +148,7 @@ export default function CodeEditor({
         return (
           <div key={fullPath}>
             <div
-              className="flex items-center gap-1 px-2 py-1 hover:bg-gray-800 cursor-pointer text-gray-400"
+              className="flex cursor-pointer items-center gap-1 px-2 py-1 text-gray-400 hover:bg-gray-800"
               onClick={() => toggleFolder(fullPath)}
             >
               {isExpanded ? (
@@ -180,9 +186,7 @@ export default function CodeEditor({
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        <div className="overflow-y-auto py-2">
-          {renderFileTree(fileTree)}
-        </div>
+        <div className="overflow-y-auto py-2">{renderFileTree(fileTree)}</div>
       </div>
 
       {/* Code Editor */}
@@ -219,9 +223,11 @@ export default function CodeEditor({
 
       {/* New File Modal */}
       {showNewFileModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-gray-900 rounded-lg p-6 w-96 border border-gray-800">
-            <h3 className="text-lg font-semibold text-white mb-4">Create New File</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-96 rounded-lg border border-gray-800 bg-gray-900 p-6">
+            <h3 className="mb-4 text-lg font-semibold text-white">
+              Create New File
+            </h3>
             <input
               type="text"
               value={newFileName}
@@ -231,7 +237,7 @@ export default function CodeEditor({
                 if (e.key === 'Escape') setShowNewFileModal(false)
               }}
               placeholder="e.g., components/Button.tsx"
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-600"
+              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white placeholder-gray-500 focus:border-purple-600 focus:outline-none"
               autoFocus
             />
             <div className="mt-4 flex justify-end gap-2">
@@ -243,7 +249,7 @@ export default function CodeEditor({
               </button>
               <button
                 onClick={createNewFile}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700"
               >
                 Create
               </button>

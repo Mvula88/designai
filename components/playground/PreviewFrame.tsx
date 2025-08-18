@@ -30,12 +30,14 @@ export default function PreviewFrame({
     const generatePreview = async () => {
       setLoading(true)
       setError(null)
-      
+
       try {
         // In production, this would compile and serve the code
         // For now, we'll use a sandboxed iframe with srcdoc
         const htmlContent = generateHTMLFromCode(code)
-        setPreviewUrl(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`)
+        setPreviewUrl(
+          `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`
+        )
       } catch (err) {
         setError('Failed to generate preview')
         console.error(err)
@@ -49,10 +51,14 @@ export default function PreviewFrame({
 
   const generateHTMLFromCode = (files: Record<string, string>) => {
     // Extract the main app content
-    const appContent = files['app/page.tsx'] || files['pages/index.tsx'] || files['index.html']
-    
+    const appContent =
+      files['app/page.tsx'] || files['pages/index.tsx'] || files['index.html']
+
     // If it's React/Next.js code, create a basic HTML wrapper
-    if (appContent && (appContent.includes('export default') || appContent.includes('return ('))) {
+    if (
+      appContent &&
+      (appContent.includes('export default') || appContent.includes('return ('))
+    ) {
       return `
         <!DOCTYPE html>
         <html lang="en">
@@ -83,12 +89,12 @@ export default function PreviewFrame({
         </html>
       `
     }
-    
+
     // If it's plain HTML, return as is
     if (files['index.html']) {
       return files['index.html']
     }
-    
+
     // Default fallback
     return `
       <!DOCTYPE html>
@@ -112,12 +118,12 @@ export default function PreviewFrame({
     let transformed = code
       .replace(/export\s+default\s+function\s+\w+\s*\(\s*\)/, 'function App()')
       .replace(/export\s+default\s+/, '')
-    
+
     // Handle TypeScript types (remove them for preview)
     transformed = transformed
       .replace(/:\s*\w+(\[\])?/g, '') // Remove type annotations
       .replace(/<(\w+)>/g, '') // Remove generic types
-    
+
     return transformed
   }
 
@@ -192,7 +198,7 @@ export default function PreviewFrame({
               </div>
             </div>
           ) : (
-            <div className="h-full rounded-lg bg-white shadow-lg overflow-hidden">
+            <div className="h-full overflow-hidden rounded-lg bg-white shadow-lg">
               <iframe
                 ref={iframeRef}
                 src={previewUrl}

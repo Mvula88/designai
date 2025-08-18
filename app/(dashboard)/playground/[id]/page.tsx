@@ -1,33 +1,18 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import {
-  Play,
-  Save,
-  Download,
-  Share2,
-  Settings,
   ChevronLeft,
-  Terminal,
-  Globe,
   Smartphone,
   Tablet,
   Monitor,
-  Send,
   Loader2,
   Github,
   Cloud,
-  Database,
   Key,
-  CheckCircle,
-  AlertCircle,
-  FileCode,
-  FolderTree,
-  Sparkles,
-  RotateCw,
   Code2,
   MessageSquare,
 } from 'lucide-react'
@@ -37,10 +22,9 @@ import IntegrationsPanel from '@/components/playground/IntegrationsPanel'
 import DeploymentStatus from '@/components/playground/DeploymentStatus'
 
 // Dynamically import Monaco Editor to avoid SSR issues
-const CodeEditor = dynamic(
-  () => import('@/components/playground/CodeEditor'),
-  { ssr: false }
-)
+const CodeEditor = dynamic(() => import('@/components/playground/CodeEditor'), {
+  ssr: false,
+})
 
 const PreviewFrame = dynamic(
   () => import('@/components/playground/PreviewFrame'),
@@ -75,7 +59,9 @@ export default function PlaygroundEditorPage() {
   const [saving, setSaving] = useState(false)
   const [code, setCode] = useState<any>({})
   const [selectedFile, setSelectedFile] = useState('app/page.tsx')
-  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  const [previewDevice, setPreviewDevice] = useState<
+    'desktop' | 'tablet' | 'mobile'
+  >('desktop')
   const [showChat, setShowChat] = useState(true)
   const [showIntegrations, setShowIntegrations] = useState(false)
   const [showDeployment, setShowDeployment] = useState(false)
@@ -118,23 +104,25 @@ export default function PlaygroundEditorPage() {
       if (error) throw error
 
       setPlayground(data)
-      setCode(data.current_code || {
-        'app/page.tsx': `export default function Home() {
+      setCode(
+        data.current_code || {
+          'app/page.tsx': `export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <h1 className="text-4xl font-bold">Welcome to your app!</h1>
     </div>
   )
 }`,
-        'package.json': `{
+          'package.json': `{
   "name": "my-app",
   "version": "1.0.0",
   "dependencies": {
     "react": "^18.2.0",
     "next": "^14.0.0"
   }
-}`
-      })
+}`,
+        }
+      )
       setPromptHistory(data.prompt_history || [])
     } catch (error) {
       console.error('Failed to load playground:', error)
@@ -201,10 +189,10 @@ export default function PlaygroundEditorPage() {
       if (!response.ok) throw new Error('Generation failed')
 
       const data = await response.json()
-      
+
       // Update code with generated files
       setCode(data.code)
-      
+
       // Add to prompt history
       const newHistoryItem = {
         prompt,
@@ -212,7 +200,7 @@ export default function PlaygroundEditorPage() {
         timestamp: new Date().toISOString(),
       }
       setPromptHistory([...promptHistory, newHistoryItem])
-      
+
       toast.success('Code generated successfully!')
     } catch (error) {
       console.error('Failed to generate code:', error)
@@ -223,7 +211,9 @@ export default function PlaygroundEditorPage() {
   }
 
   const deployToGitHub = async () => {
-    const githubIntegration = integrations.find(i => i.service_type === 'github')
+    const githubIntegration = integrations.find(
+      (i) => i.service_type === 'github'
+    )
     if (!githubIntegration) {
       toast.error('Please connect GitHub first')
       setShowIntegrations(true)
@@ -309,7 +299,9 @@ export default function PlaygroundEditorPage() {
             <input
               type="text"
               value={playground.name}
-              onChange={(e) => setPlayground({ ...playground, name: e.target.value })}
+              onChange={(e) =>
+                setPlayground({ ...playground, name: e.target.value })
+              }
               className="bg-transparent text-white outline-none"
               onBlur={savePlayground}
             />
@@ -328,7 +320,9 @@ export default function PlaygroundEditorPage() {
             <button
               onClick={() => setPreviewDevice('desktop')}
               className={`rounded p-1.5 ${
-                previewDevice === 'desktop' ? 'bg-gray-700 text-white' : 'text-gray-400'
+                previewDevice === 'desktop'
+                  ? 'bg-gray-700 text-white'
+                  : 'text-gray-400'
               }`}
             >
               <Monitor className="h-4 w-4" />
@@ -336,7 +330,9 @@ export default function PlaygroundEditorPage() {
             <button
               onClick={() => setPreviewDevice('tablet')}
               className={`rounded p-1.5 ${
-                previewDevice === 'tablet' ? 'bg-gray-700 text-white' : 'text-gray-400'
+                previewDevice === 'tablet'
+                  ? 'bg-gray-700 text-white'
+                  : 'text-gray-400'
               }`}
             >
               <Tablet className="h-4 w-4" />
@@ -344,7 +340,9 @@ export default function PlaygroundEditorPage() {
             <button
               onClick={() => setPreviewDevice('mobile')}
               className={`rounded p-1.5 ${
-                previewDevice === 'mobile' ? 'bg-gray-700 text-white' : 'text-gray-400'
+                previewDevice === 'mobile'
+                  ? 'bg-gray-700 text-white'
+                  : 'text-gray-400'
               }`}
             >
               <Smartphone className="h-4 w-4" />
@@ -369,7 +367,9 @@ export default function PlaygroundEditorPage() {
           <button
             onClick={() => setShowIntegrations(!showIntegrations)}
             className={`rounded-lg p-1.5 ${
-              showIntegrations ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              showIntegrations
+                ? 'bg-gray-700 text-white'
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             <Key className="h-5 w-5" />
@@ -377,7 +377,9 @@ export default function PlaygroundEditorPage() {
           <button
             onClick={() => setShowChat(!showChat)}
             className={`rounded-lg p-1.5 ${
-              showChat ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              showChat
+                ? 'bg-gray-700 text-white'
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             <MessageSquare className="h-5 w-5" />

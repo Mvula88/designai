@@ -9,20 +9,16 @@ const anthropic = new Anthropic({
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const {
-      prompt,
-      playgroundId,
-      currentCode,
-      framework,
-      language,
-      styling,
-    } = await request.json()
+    const { prompt, playgroundId, currentCode, framework, language, styling } =
+      await request.json()
 
     // Build the system prompt based on the project settings
     const systemPrompt = `You are an expert full-stack developer. You are building a ${framework} application using ${language} with ${styling} for styling.
@@ -89,11 +85,12 @@ Please generate or modify the code according to this request. Make sure the code
       }
     } catch (parseError) {
       console.error('Failed to parse Claude response:', parseError)
-      
+
       // Fallback: create a simple response
       generatedCode = {
         code: currentCode,
-        explanation: "I've analyzed your request. Please be more specific about what you'd like to build.",
+        explanation:
+          "I've analyzed your request. Please be more specific about what you'd like to build.",
         files: Object.keys(currentCode),
         dependencies: [],
       }
@@ -126,15 +123,13 @@ Please generate or modify the code according to this request. Make sure the code
 
     // Save individual files
     for (const [filePath, content] of Object.entries(generatedCode.code)) {
-      await supabase
-        .from('playground_files')
-        .upsert({
-          playground_id: playgroundId,
-          file_path: filePath,
-          content: content as string,
-          file_type: filePath.split('.').pop(),
-          size: (content as string).length,
-        })
+      await supabase.from('playground_files').upsert({
+        playground_id: playgroundId,
+        file_path: filePath,
+        content: content as string,
+        file_type: filePath.split('.').pop(),
+        size: (content as string).length,
+      })
     }
 
     return NextResponse.json({

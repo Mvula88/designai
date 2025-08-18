@@ -38,22 +38,26 @@ const EXAMPLE_PROMPTS = [
   {
     icon: Zap,
     title: 'Task Manager',
-    prompt: 'Create a task management app with user authentication, teams, and real-time updates',
+    prompt:
+      'Create a task management app with user authentication, teams, and real-time updates',
   },
   {
     icon: Database,
     title: 'E-commerce Store',
-    prompt: 'Build an e-commerce platform with products, cart, checkout, and payment integration',
+    prompt:
+      'Build an e-commerce platform with products, cart, checkout, and payment integration',
   },
   {
     icon: Cloud,
     title: 'SaaS Dashboard',
-    prompt: 'Create a SaaS dashboard with analytics, user management, and subscription billing',
+    prompt:
+      'Create a SaaS dashboard with analytics, user management, and subscription billing',
   },
   {
     icon: Github,
     title: 'Blog Platform',
-    prompt: 'Build a blog platform with markdown support, comments, and social sharing',
+    prompt:
+      'Build a blog platform with markdown support, comments, and social sharing',
   },
 ]
 
@@ -224,7 +228,9 @@ export default function AIPlayground({
                   </div>
                   {message.files && message.files.length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <div className="text-xs text-gray-500">Generated files:</div>
+                      <div className="text-xs text-gray-500">
+                        Generated files:
+                      </div>
                       {message.files.map((file) => (
                         <div
                           key={file}

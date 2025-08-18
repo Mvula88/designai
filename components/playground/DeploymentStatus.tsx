@@ -26,7 +26,9 @@ interface DeploymentStatusProps {
   playgroundId: string
 }
 
-export default function DeploymentStatus({ playgroundId }: DeploymentStatusProps) {
+export default function DeploymentStatus({
+  playgroundId,
+}: DeploymentStatusProps) {
   const [deployments, setDeployments] = useState<Deployment[]>([])
   const [loading, setLoading] = useState(true)
   const [showDetails, setShowDetails] = useState(false)
@@ -34,7 +36,7 @@ export default function DeploymentStatus({ playgroundId }: DeploymentStatusProps
 
   useEffect(() => {
     loadDeployments()
-    
+
     // Subscribe to deployment updates
     const subscription = supabase
       .channel(`deployments-${playgroundId}`)
@@ -76,7 +78,7 @@ export default function DeploymentStatus({ playgroundId }: DeploymentStatusProps
   }
 
   const latestDeployment = deployments[0]
-  
+
   if (!latestDeployment) return null
 
   const getStatusColor = (status: string) => {
@@ -118,14 +120,16 @@ export default function DeploymentStatus({ playgroundId }: DeploymentStatusProps
     <>
       {/* Compact Status */}
       <div
-        className={`rounded-lg border border-gray-800 bg-gray-950 p-3 shadow-lg cursor-pointer ${
+        className={`cursor-pointer rounded-lg border border-gray-800 bg-gray-950 p-3 shadow-lg ${
           showDetails ? 'w-96' : 'w-64'
         }`}
         onClick={() => setShowDetails(!showDetails)}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`rounded-lg p-2 ${getStatusColor(latestDeployment.status)}`}>
+            <div
+              className={`rounded-lg p-2 ${getStatusColor(latestDeployment.status)}`}
+            >
               {getStatusIcon(latestDeployment.status)}
             </div>
             <div>
@@ -133,10 +137,10 @@ export default function DeploymentStatus({ playgroundId }: DeploymentStatusProps
                 {latestDeployment.status === 'ready'
                   ? 'Deployed'
                   : latestDeployment.status === 'building'
-                  ? 'Deploying...'
-                  : latestDeployment.status === 'error'
-                  ? 'Deploy failed'
-                  : 'Pending'}
+                    ? 'Deploying...'
+                    : latestDeployment.status === 'error'
+                      ? 'Deploy failed'
+                      : 'Pending'}
               </p>
               <p className="text-xs text-gray-400">
                 {new Date(latestDeployment.created_at).toLocaleTimeString()}
@@ -159,7 +163,9 @@ export default function DeploymentStatus({ playgroundId }: DeploymentStatusProps
         {/* Expanded Details */}
         {showDetails && (
           <div className="mt-4 space-y-3 border-t border-gray-800 pt-4">
-            <h4 className="text-sm font-medium text-white">Recent Deployments</h4>
+            <h4 className="text-sm font-medium text-white">
+              Recent Deployments
+            </h4>
             <div className="space-y-2">
               {deployments.map((deployment) => (
                 <div
@@ -179,9 +185,9 @@ export default function DeploymentStatus({ playgroundId }: DeploymentStatusProps
                   </div>
                   <div className="flex items-center gap-2">
                     <span
-                      className={`rounded-full px-2 py-1 text-xs ${
-                        getStatusColor(deployment.status)
-                      }`}
+                      className={`rounded-full px-2 py-1 text-xs ${getStatusColor(
+                        deployment.status
+                      )}`}
                     >
                       {deployment.status}
                     </span>
