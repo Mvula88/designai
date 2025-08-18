@@ -2,10 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  Brain, TrendingUp, DollarSign, Activity, Users, 
-  BarChart3, PieChart, Calendar, Download, AlertCircle,
-  Zap, Clock, CreditCard, Shield
+import {
+  Brain,
+  TrendingUp,
+  DollarSign,
+  Activity,
+  Users,
+  BarChart3,
+  PieChart,
+  Calendar,
+  Download,
+  AlertCircle,
+  Zap,
+  Clock,
+  CreditCard,
+  Shield,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -42,9 +53,11 @@ export default function AdminAIPage() {
     topUsers: [],
     featureUsage: {},
     modelUsage: {},
-    hourlyUsage: []
+    hourlyUsage: [],
   })
-  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days' | 'all'>('7days')
+  const [dateRange, setDateRange] = useState<
+    'today' | '7days' | '30days' | 'all'
+  >('7days')
   const [loading, setLoading] = useState(true)
   const [userCredits, setUserCredits] = useState<any[]>([])
   const supabase = createClient()
@@ -85,18 +98,21 @@ export default function AdminAIPage() {
 
       // Calculate stats
       const totalRequests = usage?.length || 0
-      const totalTokens = usage?.reduce((sum, u) => sum + (u.tokens_used || 0), 0) || 0
-      const totalCost = usage?.reduce((sum, u) => sum + (u.cost_estimate || 0), 0) || 0
-      const averageTokensPerRequest = totalRequests > 0 ? Math.round(totalTokens / totalRequests) : 0
+      const totalTokens =
+        usage?.reduce((sum, u) => sum + (u.tokens_used || 0), 0) || 0
+      const totalCost =
+        usage?.reduce((sum, u) => sum + (u.cost_estimate || 0), 0) || 0
+      const averageTokensPerRequest =
+        totalRequests > 0 ? Math.round(totalTokens / totalRequests) : 0
 
       // Top users
       const userMap = new Map()
-      usage?.forEach(u => {
+      usage?.forEach((u) => {
         const existing = userMap.get(u.user_id) || {
           user_id: u.user_id,
           email: u.profiles?.email || 'Unknown',
           request_count: 0,
-          total_tokens: 0
+          total_tokens: 0,
         }
         existing.request_count++
         existing.total_tokens += u.tokens_used || 0
@@ -108,13 +124,13 @@ export default function AdminAIPage() {
 
       // Feature usage
       const featureUsage: { [key: string]: number } = {}
-      usage?.forEach(u => {
+      usage?.forEach((u) => {
         featureUsage[u.feature] = (featureUsage[u.feature] || 0) + 1
       })
 
       // Model usage
       const modelUsage: { [key: string]: number } = {}
-      usage?.forEach(u => {
+      usage?.forEach((u) => {
         modelUsage[u.model_used] = (modelUsage[u.model_used] || 0) + 1
       })
 
@@ -122,11 +138,14 @@ export default function AdminAIPage() {
       const hourlyUsage: Array<{ hour: string; requests: number }> = []
       for (let i = 0; i < 24; i++) {
         const hour = i.toString().padStart(2, '0') + ':00'
-        const count = usage?.filter(u => {
-          const date = new Date(u.created_at)
-          return date.getHours() === i && 
-                 date.toDateString() === new Date().toDateString()
-        }).length || 0
+        const count =
+          usage?.filter((u) => {
+            const date = new Date(u.created_at)
+            return (
+              date.getHours() === i &&
+              date.toDateString() === new Date().toDateString()
+            )
+          }).length || 0
         hourlyUsage.push({ hour, requests: count })
       }
 
@@ -138,7 +157,7 @@ export default function AdminAIPage() {
         topUsers,
         featureUsage,
         modelUsage,
-        hourlyUsage
+        hourlyUsage,
       })
     } catch (error) {
       console.error('Failed to load AI stats:', error)
@@ -179,7 +198,7 @@ export default function AdminAIPage() {
         action: 'update_credits',
         entity_type: 'user',
         entity_id: userId,
-        details: { new_credits: newCredits }
+        details: { new_credits: newCredits },
       })
     } catch (error) {
       toast.error('Failed to update credits')
@@ -195,14 +214,14 @@ export default function AdminAIPage() {
       ['Average Tokens/Request', stats.averageTokensPerRequest].join(','),
       '',
       ['Feature', 'Usage Count'].join(','),
-      ...Object.entries(stats.featureUsage).map(([feature, count]) => 
+      ...Object.entries(stats.featureUsage).map(([feature, count]) =>
         [feature, count].join(',')
       ),
       '',
       ['Model', 'Usage Count'].join(','),
-      ...Object.entries(stats.modelUsage).map(([model, count]) => 
+      ...Object.entries(stats.modelUsage).map(([model, count]) =>
         [model, count].join(',')
-      )
+      ),
     ].join('\n')
 
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -223,13 +242,13 @@ export default function AdminAIPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
         {/* Admin Sidebar */}
-        <div className="w-64 bg-gray-900 min-h-screen">
+        <div className="min-h-screen w-64 bg-gray-900">
           <div className="p-4">
-            <Link href="/admin" className="flex items-center gap-2 mb-8">
-              <Shield className="w-8 h-8 text-purple-500" />
+            <Link href="/admin" className="mb-8 flex items-center gap-2">
+              <Shield className="h-8 w-8 text-purple-500" />
               <div>
-                <h1 className="text-white font-bold text-lg">Admin Panel</h1>
-                <p className="text-gray-400 text-xs">AI Usage Monitoring</p>
+                <h1 className="text-lg font-bold text-white">Admin Panel</h1>
+                <p className="text-xs text-gray-400">AI Usage Monitoring</p>
               </div>
             </Link>
           </div>
@@ -238,11 +257,13 @@ export default function AdminAIPage() {
         {/* Main Content */}
         <div className="flex-1">
           {/* Header */}
-          <header className="bg-white shadow-sm border-b">
+          <header className="border-b bg-white shadow-sm">
             <div className="px-6 py-4">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">AI Usage & Credits</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    AI Usage & Credits
+                  </h2>
                   <p className="text-sm text-gray-600">
                     Monitor AI API usage and manage user credits
                   </p>
@@ -251,7 +272,7 @@ export default function AdminAIPage() {
                   <select
                     value={dateRange}
                     onChange={(e) => setDateRange(e.target.value as any)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none"
+                    className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none"
                   >
                     <option value="today">Today</option>
                     <option value="7days">Last 7 Days</option>
@@ -260,9 +281,9 @@ export default function AdminAIPage() {
                   </select>
                   <button
                     onClick={exportUsageData}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-lg bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className="h-4 w-4" />
                     Export
                   </button>
                 </div>
@@ -272,90 +293,112 @@ export default function AdminAIPage() {
 
           {loading ? (
             <div className="p-6 text-center">
-              <div className="inline-block w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-purple-600 border-t-transparent"></div>
             </div>
           ) : (
             <div className="p-6">
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Brain className="w-8 h-8 text-purple-500" />
-                    <span className="text-2xl font-bold">{formatNumber(stats.totalRequests)}</span>
+              <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-4">
+                <div className="rounded-lg bg-white p-6 shadow">
+                  <div className="mb-4 flex items-center justify-between">
+                    <Brain className="h-8 w-8 text-purple-500" />
+                    <span className="text-2xl font-bold">
+                      {formatNumber(stats.totalRequests)}
+                    </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm">Total Requests</h3>
+                  <h3 className="text-sm text-gray-600">Total Requests</h3>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Zap className="w-8 h-8 text-yellow-500" />
-                    <span className="text-2xl font-bold">{formatNumber(stats.totalTokens)}</span>
+                <div className="rounded-lg bg-white p-6 shadow">
+                  <div className="mb-4 flex items-center justify-between">
+                    <Zap className="h-8 w-8 text-yellow-500" />
+                    <span className="text-2xl font-bold">
+                      {formatNumber(stats.totalTokens)}
+                    </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm">Tokens Used</h3>
+                  <h3 className="text-sm text-gray-600">Tokens Used</h3>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <DollarSign className="w-8 h-8 text-green-500" />
-                    <span className="text-2xl font-bold">${stats.totalCost.toFixed(2)}</span>
+                <div className="rounded-lg bg-white p-6 shadow">
+                  <div className="mb-4 flex items-center justify-between">
+                    <DollarSign className="h-8 w-8 text-green-500" />
+                    <span className="text-2xl font-bold">
+                      ${stats.totalCost.toFixed(2)}
+                    </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm">Total Cost</h3>
+                  <h3 className="text-sm text-gray-600">Total Cost</h3>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <Activity className="w-8 h-8 text-blue-500" />
-                    <span className="text-2xl font-bold">{stats.averageTokensPerRequest}</span>
+                <div className="rounded-lg bg-white p-6 shadow">
+                  <div className="mb-4 flex items-center justify-between">
+                    <Activity className="h-8 w-8 text-blue-500" />
+                    <span className="text-2xl font-bold">
+                      {stats.averageTokensPerRequest}
+                    </span>
                   </div>
-                  <h3 className="text-gray-600 text-sm">Avg Tokens/Request</h3>
+                  <h3 className="text-sm text-gray-600">Avg Tokens/Request</h3>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Feature Usage */}
-                <div className="bg-white rounded-lg shadow">
-                  <div className="p-4 border-b">
+                <div className="rounded-lg bg-white shadow">
+                  <div className="border-b p-4">
                     <h3 className="font-semibold">Feature Usage</h3>
                   </div>
                   <div className="p-4">
-                    {Object.entries(stats.featureUsage).map(([feature, count]) => (
-                      <div key={feature} className="flex justify-between items-center py-2 border-b last:border-0">
-                        <span className="text-sm capitalize">{feature.replace('_', ' ')}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-32 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="h-2 bg-purple-600 rounded-full"
-                              style={{ 
-                                width: `${(count / stats.totalRequests) * 100}%` 
-                              }}
-                            />
+                    {Object.entries(stats.featureUsage).map(
+                      ([feature, count]) => (
+                        <div
+                          key={feature}
+                          className="flex items-center justify-between border-b py-2 last:border-0"
+                        >
+                          <span className="text-sm capitalize">
+                            {feature.replace('_', ' ')}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-32 rounded-full bg-gray-200">
+                              <div
+                                className="h-2 rounded-full bg-purple-600"
+                                style={{
+                                  width: `${(count / stats.totalRequests) * 100}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="w-12 text-right text-sm text-gray-600">
+                              {count}
+                            </span>
                           </div>
-                          <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 </div>
 
                 {/* Model Usage */}
-                <div className="bg-white rounded-lg shadow">
-                  <div className="p-4 border-b">
+                <div className="rounded-lg bg-white shadow">
+                  <div className="border-b p-4">
                     <h3 className="font-semibold">Model Usage</h3>
                   </div>
                   <div className="p-4">
                     {Object.entries(stats.modelUsage).map(([model, count]) => (
-                      <div key={model} className="flex justify-between items-center py-2 border-b last:border-0">
+                      <div
+                        key={model}
+                        className="flex items-center justify-between border-b py-2 last:border-0"
+                      >
                         <span className="text-sm">{model}</span>
                         <div className="flex items-center gap-2">
-                          <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div className="h-2 w-32 rounded-full bg-gray-200">
                             <div
-                              className="h-2 bg-indigo-600 rounded-full"
-                              style={{ 
-                                width: `${(count / stats.totalRequests) * 100}%` 
+                              className="h-2 rounded-full bg-indigo-600"
+                              style={{
+                                width: `${(count / stats.totalRequests) * 100}%`,
                               }}
                             />
                           </div>
-                          <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+                          <span className="w-12 text-right text-sm text-gray-600">
+                            {count}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -364,19 +407,29 @@ export default function AdminAIPage() {
               </div>
 
               {/* Top Users */}
-              <div className="bg-white rounded-lg shadow mb-8">
-                <div className="p-4 border-b">
+              <div className="mb-8 rounded-lg bg-white shadow">
+                <div className="border-b p-4">
                   <h3 className="font-semibold">Top AI Users</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requests</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tokens</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg/Request</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Est. Cost</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                          User
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                          Requests
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                          Tokens
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                          Avg/Request
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                          Est. Cost
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -385,8 +438,12 @@ export default function AdminAIPage() {
                           <td className="px-4 py-3">
                             <p className="text-sm font-medium">{user.email}</p>
                           </td>
-                          <td className="px-4 py-3 text-sm">{user.request_count}</td>
-                          <td className="px-4 py-3 text-sm">{formatNumber(user.total_tokens)}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {user.request_count}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {formatNumber(user.total_tokens)}
+                          </td>
                           <td className="px-4 py-3 text-sm">
                             {Math.round(user.total_tokens / user.request_count)}
                           </td>
@@ -401,31 +458,40 @@ export default function AdminAIPage() {
               </div>
 
               {/* Credits Management */}
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-4 border-b">
+              <div className="rounded-lg bg-white shadow">
+                <div className="border-b p-4">
                   <h3 className="font-semibold">User Credits Management</h3>
                 </div>
                 <div className="p-4">
                   <div className="space-y-2">
                     {userCredits.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div
+                        key={user.id}
+                        className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
+                      >
                         <div>
-                          <p className="font-medium">{user.username || user.email}</p>
-                          <p className="text-sm text-gray-500">Current credits: {user.credits}</p>
+                          <p className="font-medium">
+                            {user.username || user.email}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Current credits: {user.credits}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
                             defaultValue={user.credits}
-                            className="w-24 px-2 py-1 border rounded"
+                            className="w-24 rounded border px-2 py-1"
                             id={`credits-${user.id}`}
                           />
                           <button
                             onClick={() => {
-                              const input = document.getElementById(`credits-${user.id}`) as HTMLInputElement
+                              const input = document.getElementById(
+                                `credits-${user.id}`
+                              ) as HTMLInputElement
                               updateUserCredits(user.id, parseInt(input.value))
                             }}
-                            className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700"
+                            className="rounded bg-purple-600 px-3 py-1 text-white hover:bg-purple-700"
                           >
                             Update
                           </button>

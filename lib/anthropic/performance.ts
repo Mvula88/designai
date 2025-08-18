@@ -23,7 +23,7 @@ export async function predictDesignPerformance(
   designType: 'landing' | 'social' | 'banner' | 'general' = 'general'
 ): Promise<PerformancePrediction> {
   const supabase = createClient()
-  
+
   try {
     const prompt = `Analyze this design's potential performance and provide metrics.
 
@@ -65,9 +65,9 @@ Return a JSON response with this exact structure:
       messages: [
         {
           role: 'user',
-          content: prompt
-        }
-      ]
+          content: prompt,
+        },
+      ],
     })
 
     const content = message.content[0]
@@ -91,14 +91,14 @@ Return a JSON response with this exact structure:
         click_probability: prediction.clickProbability,
         conversion_estimate: prediction.conversionEstimate,
         accessibility_score: prediction.accessibilityScore,
-        suggestions: prediction.suggestions
+        suggestions: prediction.suggestions,
       })
     }
 
     return prediction
   } catch (error) {
     console.error('Performance prediction error:', error)
-    
+
     // Return default prediction on error
     return {
       engagementScore: 50,
@@ -108,15 +108,15 @@ Return a JSON response with this exact structure:
       readabilityScore: 70,
       suggestions: [
         {
-          category: 'general',
+          category: 'content' as const,
           priority: 'medium',
           issue: 'Unable to analyze design',
           suggestion: 'Please try again or check your design data',
-          impact: 'Analysis will provide personalized recommendations'
-        }
+          impact: 'Analysis will provide personalized recommendations',
+        },
       ],
       strengths: ['Design loaded successfully'],
-      weaknesses: ['Analysis incomplete']
+      weaknesses: ['Analysis incomplete'],
     }
   }
 }
@@ -139,9 +139,9 @@ Provide insights as a JSON array of strings.`
       messages: [
         {
           role: 'user',
-          content: prompt
-        }
-      ]
+          content: prompt,
+        },
+      ],
     })
 
     const content = message.content[0]
@@ -158,7 +158,7 @@ Provide insights as a JSON array of strings.`
       'Try using a more consistent color palette',
       'Add more whitespace between elements',
       'Ensure text is large enough for mobile viewing',
-      'Consider adding a clear call-to-action'
+      'Consider adding a clear call-to-action',
     ]
   }
 }

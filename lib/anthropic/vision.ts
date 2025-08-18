@@ -20,10 +20,13 @@ interface VisionAnalysisResult {
 
 export async function analyzeImageWithClaude(
   imageUrl: string,
-  analysisType: 'design_archaeology' | 'style_extraction' | 'element_detection' = 'design_archaeology'
+  analysisType:
+    | 'design_archaeology'
+    | 'style_extraction'
+    | 'element_detection' = 'design_archaeology'
 ): Promise<VisionAnalysisResult> {
   const supabase = createClient()
-  
+
   // Check cache first
   const { data: cached } = await supabase
     .from('claude_analysis')
@@ -72,7 +75,7 @@ Return as JSON with this structure:
   "fabricObjects": [/* fabric.js object definitions */]
 }`,
       style_extraction: `Extract the design style and patterns from this image.`,
-      element_detection: `Detect and list all visual elements in this image.`
+      element_detection: `Detect and list all visual elements in this image.`,
     }
 
     const message = await anthropic.messages.create({
@@ -87,16 +90,16 @@ Return as JSON with this structure:
               source: {
                 type: 'base64',
                 media_type: 'image/png',
-                data: base64.split(',')[1]
-              }
+                data: base64.split(',')[1],
+              },
             },
             {
               type: 'text',
-              text: prompts[analysisType]
-            }
-          ]
-        }
-      ]
+              text: prompts[analysisType],
+            },
+          ],
+        },
+      ],
     })
 
     const content = message.content[0]
@@ -124,7 +127,7 @@ Return as JSON with this structure:
       claude_response: result,
       fabric_objects: result.fabricObjects,
       model_used: CLAUDE_MODELS.VISION,
-      tokens_used: message.usage?.input_tokens || 0
+      tokens_used: message.usage?.input_tokens || 0,
     })
 
     return result
@@ -144,11 +147,11 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 function convertToFabricObjects(elements: any[]): any[] {
-  return elements.map(element => {
+  return elements.map((element) => {
     const baseProps = {
       left: element.position.x,
       top: element.position.y,
-      ...element.properties
+      ...element.properties,
     }
 
     switch (element.type) {
@@ -159,9 +162,9 @@ function convertToFabricObjects(elements: any[]): any[] {
           fontSize: element.properties.fontSize || 16,
           fontFamily: element.properties.fontFamily || 'Arial',
           fill: element.properties.fill || '#000000',
-          ...baseProps
+          ...baseProps,
         }
-      
+
       case 'rectangle':
         return {
           type: 'rect',
@@ -170,9 +173,9 @@ function convertToFabricObjects(elements: any[]): any[] {
           fill: element.properties.fill || '#cccccc',
           stroke: element.properties.stroke,
           strokeWidth: element.properties.strokeWidth || 0,
-          ...baseProps
+          ...baseProps,
         }
-      
+
       case 'circle':
         return {
           type: 'circle',
@@ -180,22 +183,22 @@ function convertToFabricObjects(elements: any[]): any[] {
           fill: element.properties.fill || '#cccccc',
           stroke: element.properties.stroke,
           strokeWidth: element.properties.strokeWidth || 0,
-          ...baseProps
+          ...baseProps,
         }
-      
+
       case 'image':
         return {
           type: 'image',
           src: element.properties.src,
           width: element.dimensions?.width || 200,
           height: element.dimensions?.height || 200,
-          ...baseProps
+          ...baseProps,
         }
-      
+
       default:
         return {
           type: 'rect',
-          ...baseProps
+          ...baseProps,
         }
     }
   })

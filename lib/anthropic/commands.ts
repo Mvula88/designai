@@ -57,9 +57,9 @@ Return ONLY valid JSON in this format:
       messages: [
         {
           role: 'user',
-          content: prompt
-        }
-      ]
+          content: prompt,
+        },
+      ],
     })
 
     const content = message.content[0]
@@ -76,15 +76,16 @@ Return ONLY valid JSON in this format:
     return JSON.parse(jsonMatch[0])
   } catch (error) {
     console.error('Command interpretation error:', error)
-    
+
     // Return a fallback command
     return {
       action: 'Unable to process command',
-      description: 'Sorry, I couldn\'t understand that command. Please try rephrasing it.',
+      description:
+        "Sorry, I couldn't understand that command. Please try rephrasing it.",
       suggestions: [
         'Try being more specific about what you want to change',
-        'Use simple commands like "make text bigger" or "change color to blue"'
-      ]
+        'Use simple commands like "make text bigger" or "change color to blue"',
+      ],
     }
   }
 }
@@ -109,9 +110,9 @@ Return as a JSON array of strings.`
       messages: [
         {
           role: 'user',
-          content: prompt
-        }
-      ]
+          content: prompt,
+        },
+      ],
     })
 
     const content = message.content[0]
@@ -130,7 +131,7 @@ Return as a JSON array of strings.`
     return [
       'Try adjusting the color contrast for better readability',
       'Consider adding more whitespace between elements',
-      'Align similar elements for a cleaner look'
+      'Align similar elements for a cleaner look',
     ]
   }
 }

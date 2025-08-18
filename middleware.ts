@@ -31,19 +31,25 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Protected routes
-  if (request.nextUrl.pathname.startsWith('/dashboard') || 
-      request.nextUrl.pathname.startsWith('/editor')) {
+  if (
+    request.nextUrl.pathname.startsWith('/dashboard') ||
+    request.nextUrl.pathname.startsWith('/editor')
+  ) {
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
   // Auth routes - redirect to dashboard if already logged in
-  if (request.nextUrl.pathname === '/login' || 
-      request.nextUrl.pathname === '/signup') {
+  if (
+    request.nextUrl.pathname === '/login' ||
+    request.nextUrl.pathname === '/signup'
+  ) {
     if (user) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
@@ -53,10 +59,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/editor/:path*',
-    '/login',
-    '/signup',
-  ],
+  matcher: ['/dashboard/:path*', '/editor/:path*', '/login', '/signup'],
 }

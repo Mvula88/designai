@@ -21,7 +21,9 @@ interface CollaboratorPresence {
 
 export function useRealtime(designId: string) {
   const [channel, setChannel] = useState<RealtimeChannel | null>(null)
-  const [collaborators, setCollaborators] = useState<Map<string, CollaboratorPresence>>(new Map())
+  const [collaborators, setCollaborators] = useState<
+    Map<string, CollaboratorPresence>
+  >(new Map())
   const [isConnected, setIsConnected] = useState(false)
   const supabase = createClient()
 
@@ -42,7 +44,7 @@ export function useRealtime(designId: string) {
       .on('presence', { event: 'sync' }, () => {
         const state = designChannel.presenceState()
         const collaboratorsMap = new Map<string, CollaboratorPresence>()
-        
+
         Object.keys(state).forEach((key) => {
           const presence = state[key][0] as any
           if (presence) {
@@ -56,7 +58,7 @@ export function useRealtime(designId: string) {
             })
           }
         })
-        
+
         setCollaborators(collaboratorsMap)
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
@@ -121,53 +123,64 @@ export function useRealtime(designId: string) {
   }, [designId])
 
   // Broadcast canvas changes
-  const broadcastCanvasChange = useCallback((change: any) => {
-    if (!channel) return
+  const broadcastCanvasChange = useCallback(
+    (change: any) => {
+      if (!channel) return
 
-    channel.send({
-      type: 'broadcast',
-      event: 'canvas-change',
-      payload: change,
-    })
-  }, [channel])
+      channel.send({
+        type: 'broadcast',
+        event: 'canvas-change',
+        payload: change,
+      })
+    },
+    [channel]
+  )
 
   // Broadcast cursor position
-  const broadcastCursor = useCallback((cursor: Cursor) => {
-    if (!channel) return
+  const broadcastCursor = useCallback(
+    (cursor: Cursor) => {
+      if (!channel) return
 
-    channel.send({
-      type: 'broadcast',
-      event: 'cursor-move',
-      payload: cursor,
-    })
+      channel.send({
+        type: 'broadcast',
+        event: 'cursor-move',
+        payload: cursor,
+      })
 
-    // Update own presence
-    channel.track({
-      cursor,
-    })
-  }, [channel])
+      // Update own presence
+      channel.track({
+        cursor,
+      })
+    },
+    [channel]
+  )
 
   // Broadcast object selection
-  const broadcastSelection = useCallback((selectedObjects: string[]) => {
-    if (!channel) return
+  const broadcastSelection = useCallback(
+    (selectedObjects: string[]) => {
+      if (!channel) return
 
-    channel.send({
-      type: 'broadcast',
-      event: 'object-select',
-      payload: { selectedObjects },
-    })
+      channel.send({
+        type: 'broadcast',
+        event: 'object-select',
+        payload: { selectedObjects },
+      })
 
-    // Update own presence
-    channel.track({
-      selectedObjects,
-    })
-  }, [channel])
+      // Update own presence
+      channel.track({
+        selectedObjects,
+      })
+    },
+    [channel]
+  )
 
   // Handlers for incoming events
   const handleCanvasChange = (payload: any) => {
     // This will be handled by the canvas component
     if (window.dispatchEvent) {
-      window.dispatchEvent(new CustomEvent('realtime:canvas-change', { detail: payload }))
+      window.dispatchEvent(
+        new CustomEvent('realtime:canvas-change', { detail: payload })
+      )
     }
   }
 
@@ -186,7 +199,10 @@ export function useRealtime(designId: string) {
     })
   }
 
-  const handleObjectSelect = (payload: { userId: string; selectedObjects: string[] }) => {
+  const handleObjectSelect = (payload: {
+    userId: string
+    selectedObjects: string[]
+  }) => {
     setCollaborators((prev) => {
       const updated = new Map(prev)
       const existing = updated.get(payload.userId)

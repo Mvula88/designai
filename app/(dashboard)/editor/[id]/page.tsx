@@ -12,10 +12,12 @@ import { useParams } from 'next/navigation'
 export default function EditorPage() {
   const params = useParams()
   const designId = params.id as string
-  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null)
+  const [canvas, setCanvas] = useState<any>(null)
   const [designData, setDesignData] = useState<any>(null)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  const [activeTab, setActiveTab] = useState<'assistant' | 'import'>('assistant')
+  const [activeTab, setActiveTab] = useState<'assistant' | 'import'>(
+    'assistant'
+  )
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
@@ -40,19 +42,19 @@ export default function EditorPage() {
     }
   }
 
-  const handleCanvasReady = (fabricCanvas: fabric.Canvas) => {
+  const handleCanvasReady = (fabricCanvas: any) => {
     setCanvas(fabricCanvas)
   }
 
   const handleCanvasSave = async (canvasData: any) => {
     if (!designId || designId === 'new') return
-    
+
     setSaving(true)
     const { error } = await supabase
       .from('designs')
       .update({
         canvas_data: canvasData,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', designId)
 
@@ -65,7 +67,7 @@ export default function EditorPage() {
   const applyAIAnalysis = (fabricObjects: any[]) => {
     if (!canvas) return
 
-    fabricObjects.forEach(obj => {
+    fabricObjects.forEach((obj) => {
       // Create fabric objects from the analysis
       if (obj.type === 'rect') {
         const rect = new (window as any).fabric.Rect(obj)
@@ -78,7 +80,7 @@ export default function EditorPage() {
         canvas.add(text)
       }
     })
-    
+
     canvas.renderAll()
     toast.success('AI design applied to canvas')
   }
@@ -91,7 +93,7 @@ export default function EditorPage() {
       try {
         const objects = canvas.getActiveObjects()
         if (objects.length > 0) {
-          objects.forEach(obj => {
+          objects.forEach((obj: any) => {
             if (cmd.method === 'set' && cmd.args) {
               obj.set(cmd.args[0])
             }
@@ -112,30 +114,28 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="flex h-screen flex-col bg-gray-50">
       {/* Top Bar */}
-      <div className="h-14 bg-white border-b border-gray-200 flex items-center px-4 justify-between">
+      <div className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => window.location.href = '/'}
-            className="flex items-center gap-1 px-3 py-1 text-sm hover:bg-gray-100 rounded"
+            onClick={() => (window.location.href = '/')}
+            className="flex items-center gap-1 rounded px-3 py-1 text-sm hover:bg-gray-100"
           >
             <ChevronLeft className="h-4 w-4" />
             Back
           </button>
           <div className="h-6 w-px bg-gray-300" />
-          <h1 className="font-semibold text-lg">
+          <h1 className="text-lg font-semibold">
             {designData?.title || 'Untitled Design'}
           </h1>
-          {saving && (
-            <span className="text-sm text-gray-500">Saving...</span>
-          )}
+          {saving && <span className="text-sm text-gray-500">Saving...</span>}
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            className="px-3 py-1 text-sm border rounded hover:bg-gray-100 flex items-center gap-1"
+            className="flex items-center gap-1 rounded border px-3 py-1 text-sm hover:bg-gray-100"
           >
             {rightPanelOpen ? (
               <>
@@ -153,10 +153,10 @@ export default function EditorPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* Canvas Editor */}
         <div className="flex-1">
-          <FabricEditor 
+          <FabricEditor
             designId={designId}
             initialData={designData?.canvas_data}
             onCanvasReady={handleCanvasReady}
@@ -166,14 +166,14 @@ export default function EditorPage() {
 
         {/* AI Panel */}
         {rightPanelOpen && (
-          <div className="w-96 bg-gray-50 border-l border-gray-200 flex flex-col">
+          <div className="flex w-96 flex-col border-l border-gray-200 bg-gray-50">
             {/* Tab Navigation */}
             <div className="flex border-b bg-white">
               <button
                 onClick={() => setActiveTab('assistant')}
                 className={`flex-1 py-3 text-sm font-medium ${
-                  activeTab === 'assistant' 
-                    ? 'text-purple-600 border-b-2 border-purple-600' 
+                  activeTab === 'assistant'
+                    ? 'border-b-2 border-purple-600 text-purple-600'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -182,8 +182,8 @@ export default function EditorPage() {
               <button
                 onClick={() => setActiveTab('import')}
                 className={`flex-1 py-3 text-sm font-medium ${
-                  activeTab === 'import' 
-                    ? 'text-purple-600 border-b-2 border-purple-600' 
+                  activeTab === 'import'
+                    ? 'border-b-2 border-purple-600 text-purple-600'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -194,16 +194,11 @@ export default function EditorPage() {
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-4">
               {activeTab === 'assistant' && (
-                <ClaudeAssistant 
-                  canvas={canvas}
-                  onCommand={executeAICommand}
-                />
+                <ClaudeAssistant canvas={canvas} onCommand={executeAICommand} />
               )}
 
               {activeTab === 'import' && (
-                <VisionAnalyzer 
-                  onAnalysisComplete={applyAIAnalysis}
-                />
+                <VisionAnalyzer onAnalysisComplete={applyAIAnalysis} />
               )}
             </div>
           </div>

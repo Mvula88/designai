@@ -2,10 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  Search, Filter, MoreVertical, UserPlus, Ban, Shield, 
-  Mail, Calendar, CreditCard, Edit, Trash2, Check, X,
-  ChevronLeft, ChevronRight, Download, Upload
+import {
+  Search,
+  Filter,
+  MoreVertical,
+  UserPlus,
+  Ban,
+  Shield,
+  Mail,
+  Calendar,
+  CreditCard,
+  Edit,
+  Trash2,
+  Check,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Upload,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -50,20 +64,21 @@ export default function AdminUsersPage() {
   const loadUsers = async () => {
     setLoading(true)
     try {
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
-      
+      const { data: authUsers, error: authError } =
+        await supabase.auth.admin.listUsers()
+
       if (authError) throw authError
 
       // Get profiles for all users
-      const userIds = authUsers.users.map(u => u.id)
+      const userIds = authUsers.users.map((u) => u.id)
       const { data: profiles } = await supabase
         .from('profiles')
         .select('*')
         .in('id', userIds)
 
       // Combine auth and profile data
-      const combinedUsers = authUsers.users.map(authUser => {
-        const profile = profiles?.find(p => p.id === authUser.id)
+      const combinedUsers = authUsers.users.map((authUser) => {
+        const profile = profiles?.find((p) => p.id === authUser.id)
         return {
           ...authUser,
           profiles: profile || {
@@ -72,8 +87,8 @@ export default function AdminUsersPage() {
             role: 'user',
             subscription_tier: 'free',
             credits: 0,
-            created_at: authUser.created_at
-          }
+            created_at: authUser.created_at,
+          },
         }
       })
 
@@ -91,21 +106,28 @@ export default function AdminUsersPage() {
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(user => 
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.profiles?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (user) =>
+          user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          user.profiles?.username
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          user.profiles?.full_name
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase())
       )
     }
 
     // Role filter
     if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => user.profiles?.role === roleFilter)
+      filtered = filtered.filter((user) => user.profiles?.role === roleFilter)
     }
 
     // Tier filter
     if (tierFilter !== 'all') {
-      filtered = filtered.filter(user => user.profiles?.subscription_tier === tierFilter)
+      filtered = filtered.filter(
+        (user) => user.profiles?.subscription_tier === tierFilter
+      )
     }
 
     setFilteredUsers(filtered)
@@ -123,13 +145,13 @@ export default function AdminUsersPage() {
 
       toast.success('User role updated')
       loadUsers()
-      
+
       // Log admin action
       await supabase.from('audit_logs').insert({
         action: 'update_user_role',
         entity_type: 'user',
         entity_id: userId,
-        details: { new_role: newRole }
+        details: { new_role: newRole },
       })
     } catch (error) {
       toast.error('Failed to update user role')
@@ -170,7 +192,7 @@ export default function AdminUsersPage() {
       await supabase.from('audit_logs').insert({
         action: 'suspend_user',
         entity_type: 'user',
-        entity_id: userId
+        entity_id: userId,
       })
     } catch (error) {
       toast.error('Failed to suspend user')
@@ -178,7 +200,12 @@ export default function AdminUsersPage() {
   }
 
   const deleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return
+    if (
+      !confirm(
+        'Are you sure you want to delete this user? This action cannot be undone.'
+      )
+    )
+      return
 
     try {
       const { error } = await supabase.auth.admin.deleteUser(userId)
@@ -192,7 +219,7 @@ export default function AdminUsersPage() {
       await supabase.from('audit_logs').insert({
         action: 'delete_user',
         entity_type: 'user',
-        entity_id: userId
+        entity_id: userId,
       })
     } catch (error) {
       toast.error('Failed to delete user')
@@ -201,16 +228,26 @@ export default function AdminUsersPage() {
 
   const exportUsers = () => {
     const csv = [
-      ['Email', 'Username', 'Full Name', 'Role', 'Tier', 'Credits', 'Created At'].join(','),
-      ...filteredUsers.map(user => [
-        user.email,
-        user.profiles?.username || '',
-        user.profiles?.full_name || '',
-        user.profiles?.role || 'user',
-        user.profiles?.subscription_tier || 'free',
-        user.profiles?.credits || 0,
-        new Date(user.created_at).toLocaleDateString()
-      ].join(','))
+      [
+        'Email',
+        'Username',
+        'Full Name',
+        'Role',
+        'Tier',
+        'Credits',
+        'Created At',
+      ].join(','),
+      ...filteredUsers.map((user) =>
+        [
+          user.email,
+          user.profiles?.username || '',
+          user.profiles?.full_name || '',
+          user.profiles?.role || 'user',
+          user.profiles?.subscription_tier || 'free',
+          user.profiles?.credits || 0,
+          new Date(user.created_at).toLocaleDateString(),
+        ].join(',')
+      ),
     ].join('\n')
 
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -255,13 +292,13 @@ export default function AdminUsersPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
         {/* Admin Sidebar (reuse from main admin page) */}
-        <div className="w-64 bg-gray-900 min-h-screen">
+        <div className="min-h-screen w-64 bg-gray-900">
           <div className="p-4">
-            <Link href="/admin" className="flex items-center gap-2 mb-8">
-              <Shield className="w-8 h-8 text-purple-500" />
+            <Link href="/admin" className="mb-8 flex items-center gap-2">
+              <Shield className="h-8 w-8 text-purple-500" />
               <div>
-                <h1 className="text-white font-bold text-lg">Admin Panel</h1>
-                <p className="text-gray-400 text-xs">User Management</p>
+                <h1 className="text-lg font-bold text-white">Admin Panel</h1>
+                <p className="text-xs text-gray-400">User Management</p>
               </div>
             </Link>
           </div>
@@ -270,11 +307,13 @@ export default function AdminUsersPage() {
         {/* Main Content */}
         <div className="flex-1">
           {/* Header */}
-          <header className="bg-white shadow-sm border-b">
+          <header className="border-b bg-white shadow-sm">
             <div className="px-6 py-4">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    User Management
+                  </h2>
                   <p className="text-sm text-gray-600">
                     {filteredUsers.length} users found
                   </p>
@@ -282,15 +321,13 @@ export default function AdminUsersPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={exportUsers}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                    className="flex items-center gap-2 rounded-lg bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className="h-4 w-4" />
                     Export CSV
                   </button>
-                  <button
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-                  >
-                    <UserPlus className="w-4 h-4" />
+                  <button className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700">
+                    <UserPlus className="h-4 w-4" />
                     Add User
                   </button>
                 </div>
@@ -299,34 +336,34 @@ export default function AdminUsersPage() {
           </header>
 
           {/* Filters */}
-          <div className="p-6 bg-white border-b">
+          <div className="border-b bg-white p-6">
             <div className="flex gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search users..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
-              
+
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="all">All Roles</option>
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
                 <option value="moderator">Moderator</option>
               </select>
-              
+
               <select
                 value={tierFilter}
                 onChange={(e) => setTierFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="all">All Tiers</option>
                 <option value="free">Free</option>
@@ -338,13 +375,13 @@ export default function AdminUsersPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => bulkAction('suspend')}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                    className="rounded-lg bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700"
                   >
                     Suspend ({selectedUsers.size})
                   </button>
                   <button
                     onClick={() => bulkAction('delete')}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
                   >
                     Delete ({selectedUsers.size})
                   </button>
@@ -355,7 +392,7 @@ export default function AdminUsersPage() {
 
           {/* Users Table */}
           <div className="p-6">
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-hidden rounded-lg bg-white shadow">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
@@ -364,21 +401,40 @@ export default function AdminUsersPage() {
                         type="checkbox"
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedUsers(new Set(paginatedUsers.map(u => u.id)))
+                            setSelectedUsers(
+                              new Set(paginatedUsers.map((u) => u.id))
+                            )
                           } else {
                             setSelectedUsers(new Set())
                           }
                         }}
-                        checked={selectedUsers.size === paginatedUsers.length && paginatedUsers.length > 0}
+                        checked={
+                          selectedUsers.size === paginatedUsers.length &&
+                          paginatedUsers.length > 0
+                        }
                       />
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tier</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Credits</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Active</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      User
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Role
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Tier
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Credits
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Joined
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Last Active
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -401,10 +457,14 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <p className="font-medium text-gray-900">{user.profiles?.full_name || 'No name'}</p>
+                          <p className="font-medium text-gray-900">
+                            {user.profiles?.full_name || 'No name'}
+                          </p>
                           <p className="text-sm text-gray-500">{user.email}</p>
                           {user.profiles?.username && (
-                            <p className="text-xs text-gray-400">@{user.profiles.username}</p>
+                            <p className="text-xs text-gray-400">
+                              @{user.profiles.username}
+                            </p>
                           )}
                         </div>
                       </td>
@@ -412,29 +472,40 @@ export default function AdminUsersPage() {
                         {editingUser === user.id ? (
                           <select
                             value={editForm.role}
-                            onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                            className="px-2 py-1 border rounded text-sm"
+                            onChange={(e) =>
+                              setEditForm({ ...editForm, role: e.target.value })
+                            }
+                            className="rounded border px-2 py-1 text-sm"
                           >
                             <option value="user">User</option>
                             <option value="moderator">Moderator</option>
                             <option value="admin">Admin</option>
                           </select>
                         ) : (
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            user.profiles?.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                            user.profiles?.role === 'moderator' ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs ${
+                              user.profiles?.role === 'admin'
+                                ? 'bg-purple-100 text-purple-700'
+                                : user.profiles?.role === 'moderator'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
                             {user.profiles?.role || 'user'}
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          user.profiles?.subscription_tier === 'pro' ? 'bg-green-100 text-green-700' :
-                          user.profiles?.subscription_tier === 'enterprise' ? 'bg-indigo-100 text-indigo-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs ${
+                            user.profiles?.subscription_tier === 'pro'
+                              ? 'bg-green-100 text-green-700'
+                              : user.profiles?.subscription_tier ===
+                                  'enterprise'
+                                ? 'bg-indigo-100 text-indigo-700'
+                                : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
                           {user.profiles?.subscription_tier || 'free'}
                         </span>
                       </td>
@@ -443,21 +514,27 @@ export default function AdminUsersPage() {
                           <input
                             type="number"
                             value={editForm.credits}
-                            onChange={(e) => setEditForm({ ...editForm, credits: parseInt(e.target.value) })}
-                            className="w-20 px-2 py-1 border rounded text-sm"
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                credits: parseInt(e.target.value),
+                              })
+                            }
+                            className="w-20 rounded border px-2 py-1 text-sm"
                           />
                         ) : (
-                          <span className="text-sm">{user.profiles?.credits || 0}</span>
+                          <span className="text-sm">
+                            {user.profiles?.credits || 0}
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">
                         {new Date(user.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">
-                        {user.last_sign_in_at 
+                        {user.last_sign_in_at
                           ? new Date(user.last_sign_in_at).toLocaleDateString()
-                          : 'Never'
-                        }
+                          : 'Never'}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {editingUser === user.id ? (
@@ -465,18 +542,21 @@ export default function AdminUsersPage() {
                             <button
                               onClick={async () => {
                                 await updateUserRole(user.id, editForm.role)
-                                await updateUserCredits(user.id, editForm.credits)
+                                await updateUserCredits(
+                                  user.id,
+                                  editForm.credits
+                                )
                                 setEditingUser(null)
                               }}
-                              className="p-1 text-green-600 hover:bg-green-50 rounded"
+                              className="rounded p-1 text-green-600 hover:bg-green-50"
                             >
-                              <Check className="w-4 h-4" />
+                              <Check className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setEditingUser(null)}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                              className="rounded p-1 text-red-600 hover:bg-red-50"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="h-4 w-4" />
                             </button>
                           </div>
                         ) : (
@@ -486,24 +566,24 @@ export default function AdminUsersPage() {
                                 setEditingUser(user.id)
                                 setEditForm({
                                   role: user.profiles?.role || 'user',
-                                  credits: user.profiles?.credits || 0
+                                  credits: user.profiles?.credits || 0,
                                 })
                               }}
-                              className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                              className="rounded p-1 text-gray-600 hover:bg-gray-100"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => suspendUser(user.id)}
-                              className="p-1 text-yellow-600 hover:bg-yellow-50 rounded"
+                              className="rounded p-1 text-yellow-600 hover:bg-yellow-50"
                             >
-                              <Ban className="w-4 h-4" />
+                              <Ban className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => deleteUser(user.id)}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                              className="rounded p-1 text-red-600 hover:bg-red-50"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         )}
@@ -515,37 +595,45 @@ export default function AdminUsersPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="px-4 py-3 bg-gray-50 border-t flex items-center justify-between">
+                <div className="flex items-center justify-between border-t bg-gray-50 px-4 py-3">
                   <p className="text-sm text-gray-700">
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                    {Math.min(currentPage * itemsPerPage, filteredUsers.length)}{' '}
+                    of {filteredUsers.length} users
                   </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      onClick={() =>
+                        setCurrentPage(Math.max(1, currentPage - 1))
+                      }
                       disabled={currentPage === 1}
-                      className="p-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="rounded border p-2 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <ChevronLeft className="h-4 w-4" />
                     </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1 rounded ${
-                          currentPage === page 
-                            ? 'bg-purple-600 text-white' 
-                            : 'border hover:bg-gray-100'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`rounded px-3 py-1 ${
+                            currentPage === page
+                              ? 'bg-purple-600 text-white'
+                              : 'border hover:bg-gray-100'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
                     <button
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      onClick={() =>
+                        setCurrentPage(Math.min(totalPages, currentPage + 1))
+                      }
                       disabled={currentPage === totalPages}
-                      className="p-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="rounded border p-2 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
                 </div>

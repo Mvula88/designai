@@ -1,17 +1,25 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  learnFromUserActions, 
+import {
+  learnFromUserActions,
   getPersonalizedSuggestions,
-  predictNextAction 
+  predictNextAction,
 } from '@/lib/anthropic/memory'
 import { createClient } from '@/lib/supabase/client'
-import { Brain, Sparkles, TrendingUp, Palette, Type, Layout, Loader2 } from 'lucide-react'
+import {
+  Brain,
+  Sparkles,
+  TrendingUp,
+  Palette,
+  Type,
+  Layout,
+  Loader2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 interface DesignMemoryProps {
-  canvas: fabric.Canvas | null
+  canvas: any
   designId: string
 }
 
@@ -31,7 +39,9 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
   }, [canvas, designId])
 
   const loadUserPreferences = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) return
 
     const { data } = await supabase
@@ -52,7 +62,10 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
 
     try {
       const canvasState = canvas.toJSON()
-      const newSuggestions = await getPersonalizedSuggestions(userId, canvasState)
+      const newSuggestions = await getPersonalizedSuggestions(
+        userId,
+        canvasState
+      )
       setSuggestions(newSuggestions)
     } catch (error) {
       console.error('Failed to load suggestions:', error)
@@ -63,18 +76,18 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
     if (!canvas) return
 
     // Track object modifications
-    canvas.on('object:modified', async (e) => {
+    canvas.on('object:modified', async (e: any) => {
       const action = {
         action_type: 'object_modified',
         object_type: e.target?.type,
         timestamp: new Date().toISOString(),
         data: {
-          object: e.target?.toJSON()
-        }
+          object: e.target?.toJSON(),
+        },
       }
-      
-      setRecentActions(prev => [...prev.slice(-19), action])
-      
+
+      setRecentActions((prev) => [...prev.slice(-19), action])
+
       // Predict next action
       if (recentActions.length > 3) {
         predictNext()
@@ -82,22 +95,24 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
     })
 
     // Track color changes
-    canvas.on('path:created', (e) => {
+    canvas.on('path:created', (e: any) => {
       const action = {
         action_type: 'drawing',
         object_type: 'path',
         timestamp: new Date().toISOString(),
         data: {
           color: e.path?.stroke,
-          width: e.path?.strokeWidth
-        }
+          width: e.path?.strokeWidth,
+        },
       }
-      setRecentActions(prev => [...prev.slice(-19), action])
+      setRecentActions((prev) => [...prev.slice(-19), action])
     })
   }
 
   const learnFromActions = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user || !canvas) return
 
     setLearning(true)
@@ -114,10 +129,10 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
       if (actions && actions.length > 0) {
         const canvasState = canvas.toJSON()
         const memory = await learnFromUserActions(user.id, actions, canvasState)
-        
+
         setPreferences(memory.preferences)
         toast.success('Learning complete! Your preferences have been updated.')
-        
+
         // Refresh suggestions
         await loadPersonalizedSuggestions(user.id)
       } else {
@@ -132,20 +147,22 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
   }
 
   const predictNext = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user || !canvas) return
 
     try {
       const canvasState = {
-        activeObject: canvas.getActiveObject()?.toJSON()
+        activeObject: canvas.getActiveObject()?.toJSON(),
       }
-      
+
       const prediction = await predictNextAction(
         user.id,
         recentActions,
         canvasState
       )
-      
+
       setNextPrediction(prediction)
     } catch (error) {
       console.error('Prediction failed:', error)
@@ -155,22 +172,22 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
   const getPreferenceIcon = (type: string) => {
     switch (type) {
       case 'color_palette':
-        return <Palette className="w-4 h-4" />
+        return <Palette className="h-4 w-4" />
       case 'font_choice':
-        return <Type className="w-4 h-4" />
+        return <Type className="h-4 w-4" />
       case 'layout_style':
-        return <Layout className="w-4 h-4" />
+        return <Layout className="h-4 w-4" />
       default:
-        return <Sparkles className="w-4 h-4" />
+        return <Sparkles className="h-4 w-4" />
     }
   }
 
   return (
     <div className="space-y-4">
       {/* AI Memory Header */}
-      <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
-        <div className="flex items-center gap-2 mb-2">
-          <Brain className="w-5 h-5 text-purple-600" />
+      <div className="rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 p-4">
+        <div className="mb-2 flex items-center gap-2">
+          <Brain className="h-5 w-5 text-purple-600" />
           <h3 className="font-semibold">AI Design Memory</h3>
         </div>
         <p className="text-sm text-gray-600">
@@ -179,16 +196,16 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
         <button
           onClick={learnFromActions}
           disabled={learning}
-          className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 text-sm flex items-center gap-2"
+          className="mt-3 flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm text-white hover:bg-purple-700 disabled:bg-gray-400"
         >
           {learning ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Learning...
             </>
           ) : (
             <>
-              <Brain className="w-4 h-4" />
+              <Brain className="h-4 w-4" />
               Learn from My Style
             </>
           )}
@@ -197,12 +214,12 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
 
       {/* Learned Preferences */}
       {preferences.length > 0 && (
-        <div className="p-4 bg-white rounded-lg shadow">
-          <h4 className="font-medium mb-3">Your Design DNA</h4>
+        <div className="rounded-lg bg-white p-4 shadow">
+          <h4 className="mb-3 font-medium">Your Design DNA</h4>
           <div className="space-y-2">
             {preferences.map((pref, i) => (
               <div key={i} className="flex items-start gap-2">
-                <div className="p-1 bg-purple-100 rounded">
+                <div className="rounded bg-purple-100 p-1">
                   {getPreferenceIcon(pref.preference_type)}
                 </div>
                 <div className="flex-1">
@@ -211,22 +228,26 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
                   </p>
                   <div className="text-xs text-gray-600">
                     {pref.preference_type === 'color_palette' && (
-                      <div className="flex gap-1 mt-1">
-                        {pref.preference_data.colors?.slice(0, 5).map((color: string, j: number) => (
-                          <div
-                            key={j}
-                            className="w-6 h-6 rounded border border-gray-300"
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                        ))}
+                      <div className="mt-1 flex gap-1">
+                        {pref.preference_data.colors
+                          ?.slice(0, 5)
+                          .map((color: string, j: number) => (
+                            <div
+                              key={j}
+                              className="h-6 w-6 rounded border border-gray-300"
+                              style={{ backgroundColor: color }}
+                              title={color}
+                            />
+                          ))}
                       </div>
                     )}
                     {pref.preference_type === 'font_choice' && (
                       <span>{pref.preference_data.fonts?.join(', ')}</span>
                     )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <span>Confidence: {Math.round(pref.confidence_score * 100)}%</span>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span>
+                        Confidence: {Math.round(pref.confidence_score * 100)}%
+                      </span>
                       <span>•</span>
                       <span>Used {pref.usage_count} times</span>
                     </div>
@@ -240,13 +261,15 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
 
       {/* Next Action Prediction */}
       {nextPrediction && nextPrediction.confidence > 0.6 && (
-        <div className="p-3 bg-blue-50 rounded-lg">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4 text-blue-600" />
-            <h4 className="text-sm font-medium text-blue-900">Next Step Prediction</h4>
+        <div className="rounded-lg bg-blue-50 p-3">
+          <div className="mb-1 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-blue-600" />
+            <h4 className="text-sm font-medium text-blue-900">
+              Next Step Prediction
+            </h4>
           </div>
           <p className="text-sm text-blue-700">{nextPrediction.action}</p>
-          <p className="text-xs text-blue-600 mt-1">
+          <p className="mt-1 text-xs text-blue-600">
             Confidence: {Math.round(nextPrediction.confidence * 100)}%
           </p>
         </div>
@@ -254,13 +277,13 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
 
       {/* Personalized Suggestions */}
       {suggestions.length > 0 && (
-        <div className="p-4 bg-white rounded-lg shadow">
-          <h4 className="font-medium mb-3">Suggestions Based on Your Style</h4>
+        <div className="rounded-lg bg-white p-4 shadow">
+          <h4 className="mb-3 font-medium">Suggestions Based on Your Style</h4>
           <div className="space-y-2">
             {suggestions.map((suggestion, i) => (
               <div
                 key={i}
-                className="p-3 bg-gradient-to-r from-purple-50 to-transparent rounded-lg border-l-2 border-purple-500"
+                className="rounded-lg border-l-2 border-purple-500 bg-gradient-to-r from-purple-50 to-transparent p-3"
               >
                 <p className="text-sm text-gray-700">{suggestion}</p>
               </div>
@@ -270,20 +293,26 @@ export function DesignMemory({ canvas, designId }: DesignMemoryProps) {
       )}
 
       {/* Recent Actions */}
-      <div className="p-4 bg-white rounded-lg shadow">
-        <h4 className="font-medium mb-3">Recent Actions</h4>
-        <div className="space-y-1 max-h-32 overflow-y-auto">
-          {recentActions.slice(-5).reverse().map((action, i) => (
-            <div key={i} className="text-xs text-gray-600 flex items-center gap-2">
-              <span className="text-gray-400">
-                {new Date(action.timestamp).toLocaleTimeString()}
-              </span>
-              <span className="font-medium">{action.action_type}</span>
-              {action.object_type && (
-                <span className="text-gray-500">({action.object_type})</span>
-              )}
-            </div>
-          ))}
+      <div className="rounded-lg bg-white p-4 shadow">
+        <h4 className="mb-3 font-medium">Recent Actions</h4>
+        <div className="max-h-32 space-y-1 overflow-y-auto">
+          {recentActions
+            .slice(-5)
+            .reverse()
+            .map((action, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 text-xs text-gray-600"
+              >
+                <span className="text-gray-400">
+                  {new Date(action.timestamp).toLocaleTimeString()}
+                </span>
+                <span className="font-medium">{action.action_type}</span>
+                {action.object_type && (
+                  <span className="text-gray-500">({action.object_type})</span>
+                )}
+              </div>
+            ))}
         </div>
       </div>
     </div>

@@ -6,10 +6,10 @@ import { Upload, Loader2, Eye, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { useDropzone } from 'react-dropzone'
 
-export function VisionAnalyzer({ 
-  onAnalysisComplete 
-}: { 
-  onAnalysisComplete: (fabricObjects: any[]) => void 
+export function VisionAnalyzer({
+  onAnalysisComplete,
+}: {
+  onAnalysisComplete: (fabricObjects: any[]) => void
 }) {
   const [analyzing, setAnalyzing] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -34,9 +34,9 @@ export function VisionAnalyzer({
         URL.createObjectURL(file),
         'design_archaeology'
       )
-      
+
       setAnalysisResult(result)
-      
+
       if (result.fabricObjects) {
         toast.success('Design analyzed successfully!')
       }
@@ -51,9 +51,9 @@ export function VisionAnalyzer({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp']
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
     },
-    maxFiles: 1
+    maxFiles: 1,
   })
 
   const applyToCanvas = () => {
@@ -66,40 +66,46 @@ export function VisionAnalyzer({
   return (
     <div className="space-y-4">
       {/* Upload Area */}
-      <div className="p-4 bg-white rounded-lg shadow">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <Eye className="w-5 h-5 text-blue-500" />
+      <div className="rounded-lg bg-white p-4 shadow">
+        <h3 className="mb-4 flex items-center gap-2 font-semibold">
+          <Eye className="h-5 w-5 text-blue-500" />
           Design Archaeology
         </h3>
-        
+
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+            isDragActive
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-300 hover:border-gray-400'
           }`}
         >
           <input {...getInputProps()} />
-          
+
           {analyzing ? (
             <div className="flex flex-col items-center">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
-              <p className="text-sm text-gray-600">Analyzing design with Claude Vision...</p>
+              <Loader2 className="mb-2 h-8 w-8 animate-spin text-blue-500" />
+              <p className="text-sm text-gray-600">
+                Analyzing design with Claude Vision...
+              </p>
             </div>
           ) : imagePreview ? (
             <div className="space-y-2">
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
-                className="max-h-32 mx-auto rounded"
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="mx-auto max-h-32 rounded"
               />
-              <p className="text-sm text-gray-600">Drop another image to analyze</p>
+              <p className="text-sm text-gray-600">
+                Drop another image to analyze
+              </p>
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <Upload className="w-8 h-8 text-gray-400 mb-2" />
+              <Upload className="mb-2 h-8 w-8 text-gray-400" />
               <p className="text-sm text-gray-600">
-                {isDragActive 
-                  ? 'Drop the image here...' 
+                {isDragActive
+                  ? 'Drop the image here...'
                   : 'Drag & drop an image, or click to select'}
               </p>
             </div>
@@ -109,14 +115,16 @@ export function VisionAnalyzer({
 
       {/* Analysis Results */}
       {analysisResult && (
-        <div className="p-4 bg-white rounded-lg shadow">
-          <h4 className="font-medium mb-3">Analysis Results</h4>
-          
+        <div className="rounded-lg bg-white p-4 shadow">
+          <h4 className="mb-3 font-medium">Analysis Results</h4>
+
           <div className="space-y-3">
             {/* Description */}
             <div>
               <p className="text-sm font-medium text-gray-700">Description:</p>
-              <p className="text-sm text-gray-600">{analysisResult.description}</p>
+              <p className="text-sm text-gray-600">
+                {analysisResult.description}
+              </p>
             </div>
 
             {/* Elements Found */}
@@ -124,9 +132,12 @@ export function VisionAnalyzer({
               <p className="text-sm font-medium text-gray-700">
                 Elements Found: {analysisResult.elements?.length || 0}
               </p>
-              <div className="flex flex-wrap gap-1 mt-1">
+              <div className="mt-1 flex flex-wrap gap-1">
                 {analysisResult.elements?.map((el: any, i: number) => (
-                  <span key={i} className="px-2 py-1 bg-gray-100 rounded text-xs">
+                  <span
+                    key={i}
+                    className="rounded bg-gray-100 px-2 py-1 text-xs"
+                  >
                     {el.type}
                   </span>
                 ))}
@@ -135,12 +146,14 @@ export function VisionAnalyzer({
 
             {/* Colors */}
             <div>
-              <p className="text-sm font-medium text-gray-700">Color Palette:</p>
-              <div className="flex gap-2 mt-1">
+              <p className="text-sm font-medium text-gray-700">
+                Color Palette:
+              </p>
+              <div className="mt-1 flex gap-2">
                 {analysisResult.colors?.map((color: string, i: number) => (
                   <div
                     key={i}
-                    className="w-8 h-8 rounded border border-gray-300"
+                    className="h-8 w-8 rounded border border-gray-300"
                     style={{ backgroundColor: color }}
                     title={color}
                   />
@@ -151,11 +164,15 @@ export function VisionAnalyzer({
             {/* Suggestions */}
             {analysisResult.suggestions && (
               <div>
-                <p className="text-sm font-medium text-gray-700">Suggestions:</p>
-                <ul className="text-sm text-gray-600 list-disc list-inside">
-                  {analysisResult.suggestions.map((suggestion: string, i: number) => (
-                    <li key={i}>{suggestion}</li>
-                  ))}
+                <p className="text-sm font-medium text-gray-700">
+                  Suggestions:
+                </p>
+                <ul className="list-inside list-disc text-sm text-gray-600">
+                  {analysisResult.suggestions.map(
+                    (suggestion: string, i: number) => (
+                      <li key={i}>{suggestion}</li>
+                    )
+                  )}
                 </ul>
               </div>
             )}
@@ -163,9 +180,9 @@ export function VisionAnalyzer({
             {/* Apply Button */}
             <button
               onClick={applyToCanvas}
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+              className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="mr-2 h-4 w-4" />
               Apply to Canvas
             </button>
           </div>

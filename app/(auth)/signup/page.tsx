@@ -18,7 +18,7 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!agreedToTerms) {
       toast.error('Please agree to the terms and conditions')
       return
@@ -35,21 +35,19 @@ export default function SignupPage() {
           data: {
             full_name: fullName,
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`
-        }
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
       })
 
       if (authError) throw authError
 
       // Create profile
       if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            full_name: fullName,
-            username: email.split('@')[0],
-          })
+        const { error: profileError } = await supabase.from('profiles').insert({
+          id: authData.user.id,
+          full_name: fullName,
+          username: email.split('@')[0],
+        })
 
         if (profileError) console.error('Profile creation error:', profileError)
       }
@@ -71,28 +69,31 @@ export default function SignupPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <Sparkles className="w-10 h-10 text-purple-600" />
+            <Sparkles className="h-10 w-10 text-purple-600" />
             <h1 className="text-3xl font-bold text-gray-900">DesignOS</h1>
           </Link>
-          <p className="text-gray-600 mt-2">Create your free account</p>
+          <p className="mt-2 text-gray-600">Create your free account</p>
         </div>
 
         {/* Signup Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="rounded-2xl bg-white p-8 shadow-xl">
           {/* Features List */}
-          <div className="mb-6 p-4 bg-purple-50 rounded-lg">
-            <p className="text-sm font-medium text-purple-900 mb-2">
+          <div className="mb-6 rounded-lg bg-purple-50 p-4">
+            <p className="mb-2 text-sm font-medium text-purple-900">
               Get started with:
             </p>
             <ul className="space-y-1">
               {features.map((feature, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm text-purple-700">
-                  <Check className="w-4 h-4 text-purple-600" />
+                <li
+                  key={i}
+                  className="flex items-center gap-2 text-sm text-purple-700"
+                >
+                  <Check className="h-4 w-4 text-purple-600" />
                   {feature}
                 </li>
               ))}
@@ -101,16 +102,16 @@ export default function SignupPage() {
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Full Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="John Doe"
                   required
                 />
@@ -118,16 +119,16 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="you@example.com"
                   required
                 />
@@ -135,22 +136,22 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="••••••••"
                   minLength={6}
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="mt-1 text-xs text-gray-500">
                 Must be at least 6 characters
               </p>
             </div>
@@ -161,15 +162,21 @@ export default function SignupPage() {
                 id="terms"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="rounded text-purple-600 mt-1"
+                className="mt-1 rounded text-purple-600"
               />
               <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
                 I agree to the{' '}
-                <Link href="/terms" className="text-purple-600 hover:text-purple-700">
+                <Link
+                  href="/terms"
+                  className="text-purple-600 hover:text-purple-700"
+                >
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link href="/privacy" className="text-purple-600 hover:text-purple-700">
+                <Link
+                  href="/privacy"
+                  className="text-purple-600 hover:text-purple-700"
+                >
                   Privacy Policy
                 </Link>
               </label>
@@ -178,11 +185,11 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || !agreedToTerms}
-              className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              className="flex w-full items-center justify-center rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-400"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...
                 </>
               ) : (
@@ -192,9 +199,12 @@ export default function SignupPage() {
           </form>
 
           {/* Sign In Link */}
-          <p className="text-center mt-6 text-sm text-gray-600">
+          <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{' '}
-            <Link href="/login" className="text-purple-600 hover:text-purple-700 font-medium">
+            <Link
+              href="/login"
+              className="font-medium text-purple-600 hover:text-purple-700"
+            >
               Sign in
             </Link>
           </p>

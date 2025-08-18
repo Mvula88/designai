@@ -20,7 +20,7 @@ export async function learnFromUserActions(
   canvasState: any
 ): Promise<MemoryContext> {
   const supabase = createClient()
-  
+
   try {
     // Analyze patterns in user actions
     const prompt = `Analyze these user design actions to identify patterns and preferences.
@@ -53,9 +53,9 @@ Return JSON with this structure:
       messages: [
         {
           role: 'user',
-          content: prompt
-        }
-      ]
+          content: prompt,
+        },
+      ],
     })
 
     const content = message.content[0]
@@ -79,14 +79,16 @@ Return JSON with this structure:
         preference_type: 'color_palette',
         preference_data: { colors: analysis.colorPalette },
         confidence_score: 0.7,
-        usage_count: actions.filter(a => a.action_type === 'color_change').length
+        usage_count: actions.filter((a) => a.action_type === 'color_change')
+          .length,
       })
-      
+
       preferences.push({
         type: 'color_palette',
         data: { colors: analysis.colorPalette },
         confidence: 0.7,
-        frequency: actions.filter(a => a.action_type === 'color_change').length
+        frequency: actions.filter((a) => a.action_type === 'color_change')
+          .length,
       })
     }
 
@@ -96,28 +98,29 @@ Return JSON with this structure:
         preference_type: 'font_choice',
         preference_data: { fonts: analysis.fonts },
         confidence_score: 0.6,
-        usage_count: actions.filter(a => a.action_type === 'text_edit').length
+        usage_count: actions.filter((a) => a.action_type === 'text_edit')
+          .length,
       })
-      
+
       preferences.push({
         type: 'font_choice',
         data: { fonts: analysis.fonts },
         confidence: 0.6,
-        frequency: actions.filter(a => a.action_type === 'text_edit').length
+        frequency: actions.filter((a) => a.action_type === 'text_edit').length,
       })
     }
 
     return {
       recentActions: actions.slice(-10),
       commonPatterns: analysis.commonElements || [],
-      preferences
+      preferences,
     }
   } catch (error) {
     console.error('Memory learning error:', error)
     return {
       recentActions: actions.slice(-10),
       commonPatterns: [],
-      preferences: []
+      preferences: [],
     }
   }
 }
@@ -127,7 +130,7 @@ export async function getPersonalizedSuggestions(
   canvasState: any
 ): Promise<string[]> {
   const supabase = createClient()
-  
+
   try {
     // Get user preferences
     const { data: preferences } = await supabase
@@ -158,9 +161,9 @@ Return as JSON array of strings.`
       messages: [
         {
           role: 'user',
-          content: prompt
-        }
-      ]
+          content: prompt,
+        },
+      ],
     })
 
     const content = message.content[0]
@@ -182,7 +185,7 @@ function getDefaultSuggestions(): string[] {
     'Add more contrast to make elements pop',
     'Consider using consistent spacing',
     'Try adding a focal point to guide the eye',
-    'Use hierarchy to organize information'
+    'Use hierarchy to organize information',
   ]
 }
 
@@ -206,9 +209,9 @@ Return JSON: { "action": "action_description", "confidence": 0.7 }`
       messages: [
         {
           role: 'user',
-          content: prompt
-        }
-      ]
+          content: prompt,
+        },
+      ],
     })
 
     const content = message.content[0]
@@ -226,7 +229,7 @@ Return JSON: { "action": "action_description", "confidence": 0.7 }`
     console.error('Next action prediction error:', error)
     return {
       action: 'Continue editing',
-      confidence: 0.5
+      confidence: 0.5,
     }
   }
 }
