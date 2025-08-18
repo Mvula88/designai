@@ -1,0 +1,214 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { FabricEditor } from '@/components/canvas/FabricEditor'
+import { ClaudeAssistant } from '@/components/ai/ClaudeAssistant'
+import { VisionAnalyzer } from '@/components/ai/VisionAnalyzer'
+import { createClient } from '@/lib/supabase/client'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { toast } from 'sonner'
+import { useParams } from 'next/navigation'
+
+export default function EditorPage() {
+  const params = useParams()
+  const designId = params.id as string
+  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null)
+  const [designData, setDesignData] = useState<any>(null)
+  const [rightPanelOpen, setRightPanelOpen] = useState(true)
+  const [activeTab, setActiveTab] = useState<'assistant' | 'import'>('assistant')
+  const [saving, setSaving] = useState(false)
+  const supabase = createClient()
+
+  // Load design data
+  useEffect(() => {
+    if (designId && designId !== 'new') {
+      loadDesign()
+    }
+  }, [designId])
+
+  const loadDesign = async () => {
+    const { data, error } = await supabase
+      .from('designs')
+      .select('*')
+      .eq('id', designId)
+      .single()
+
+    if (data) {
+      setDesignData(data)
+    } else if (error) {
+      toast.error('Failed to load design')
+    }
+  }
+
+  const handleCanvasReady = (fabricCanvas: fabric.Canvas) => {
+    setCanvas(fabricCanvas)
+  }
+
+  const handleCanvasSave = async (canvasData: any) => {
+    if (!designId || designId === 'new') return
+    
+    setSaving(true)
+    const { error } = await supabase
+      .from('designs')
+      .update({
+        canvas_data: canvasData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', designId)
+
+    setSaving(false)
+    if (error) {
+      toast.error('Failed to save design')
+    }
+  }
+
+  const applyAIAnalysis = (fabricObjects: any[]) => {
+    if (!canvas) return
+
+    fabricObjects.forEach(obj => {
+      // Create fabric objects from the analysis
+      if (obj.type === 'rect') {
+        const rect = new (window as any).fabric.Rect(obj)
+        canvas.add(rect)
+      } else if (obj.type === 'circle') {
+        const circle = new (window as any).fabric.Circle(obj)
+        canvas.add(circle)
+      } else if (obj.type === 'i-text') {
+        const text = new (window as any).fabric.IText(obj.text || 'Text', obj)
+        canvas.add(text)
+      }
+    })
+    
+    canvas.renderAll()
+    toast.success('AI design applied to canvas')
+  }
+
+  const executeAICommand = (command: any) => {
+    if (!canvas) return
+
+    // Execute fabric.js commands from Claude
+    command.fabricCommands?.forEach((cmd: any) => {
+      try {
+        const objects = canvas.getActiveObjects()
+        if (objects.length > 0) {
+          objects.forEach(obj => {
+            if (cmd.method === 'set' && cmd.args) {
+              obj.set(cmd.args[0])
+            }
+          })
+        } else {
+          // Apply to canvas if no objects selected
+          if (cmd.method === 'setBackgroundColor' && cmd.args) {
+            canvas.setBackgroundColor(cmd.args[0], () => canvas.renderAll())
+          }
+        }
+      } catch (error) {
+        console.error('Failed to execute command:', error)
+      }
+    })
+
+    canvas.renderAll()
+    toast.success('AI command applied')
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-50">
+      {/* Top Bar */}
+      <div className="h-14 bg-white border-b border-gray-200 flex items-center px-4 justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => window.location.href = '/'}
+            className="flex items-center gap-1 px-3 py-1 text-sm hover:bg-gray-100 rounded"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </button>
+          <div className="h-6 w-px bg-gray-300" />
+          <h1 className="font-semibold text-lg">
+            {designData?.title || 'Untitled Design'}
+          </h1>
+          {saving && (
+            <span className="text-sm text-gray-500">Saving...</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            className="px-3 py-1 text-sm border rounded hover:bg-gray-100 flex items-center gap-1"
+          >
+            {rightPanelOpen ? (
+              <>
+                Hide AI Panel
+                <ChevronRight className="h-4 w-4" />
+              </>
+            ) : (
+              <>
+                <ChevronLeft className="h-4 w-4" />
+                Show AI Panel
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Canvas Editor */}
+        <div className="flex-1">
+          <FabricEditor 
+            designId={designId}
+            initialData={designData?.canvas_data}
+            onCanvasReady={handleCanvasReady}
+            onSave={handleCanvasSave}
+          />
+        </div>
+
+        {/* AI Panel */}
+        {rightPanelOpen && (
+          <div className="w-96 bg-gray-50 border-l border-gray-200 flex flex-col">
+            {/* Tab Navigation */}
+            <div className="flex border-b bg-white">
+              <button
+                onClick={() => setActiveTab('assistant')}
+                className={`flex-1 py-3 text-sm font-medium ${
+                  activeTab === 'assistant' 
+                    ? 'text-purple-600 border-b-2 border-purple-600' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                AI Assistant
+              </button>
+              <button
+                onClick={() => setActiveTab('import')}
+                className={`flex-1 py-3 text-sm font-medium ${
+                  activeTab === 'import' 
+                    ? 'text-purple-600 border-b-2 border-purple-600' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Import Design
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {activeTab === 'assistant' && (
+                <ClaudeAssistant 
+                  canvas={canvas}
+                  onCommand={executeAICommand}
+                />
+              )}
+
+              {activeTab === 'import' && (
+                <VisionAnalyzer 
+                  onAnalysisComplete={applyAIAnalysis}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
