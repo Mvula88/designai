@@ -13,7 +13,6 @@ import {
   Edit3,
   Copy,
   Clock,
-  Users,
   Brain,
   Eye,
   TrendingUp,
@@ -21,7 +20,6 @@ import {
   Upload,
   Wand2,
   LogOut,
-  User,
   Settings,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -78,18 +76,20 @@ export default function DashboardPage() {
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser()
-      
+
       if (!authUser) {
         router.push('/login')
         return
       }
 
       // Get or create user profile
-      let { data: profile, error: profileError } = await supabase
+      const { data: initialProfile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
         .single()
+
+      let profile = initialProfile
 
       // If no profile exists, create one
       if (profileError || !profile) {
@@ -98,9 +98,11 @@ export default function DashboardPage() {
           .insert({
             id: authUser.id,
             username: authUser.email?.split('@')[0],
-            full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
+            full_name:
+              authUser.user_metadata?.full_name ||
+              authUser.email?.split('@')[0],
             avatar_url: authUser.user_metadata?.avatar_url || '',
-            credits: 100
+            credits: 100,
           })
           .select()
           .single()
@@ -112,7 +114,7 @@ export default function DashboardPage() {
             id: authUser.id,
             email: authUser.email || '',
             username: authUser.email?.split('@')[0],
-            credits: 100
+            credits: 100,
           })
         } else {
           profile = newProfile
@@ -126,7 +128,7 @@ export default function DashboardPage() {
           username: profile.username,
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
-          credits: profile.credits
+          credits: profile.credits,
         })
       }
     } catch (error) {
@@ -195,7 +197,9 @@ export default function DashboardPage() {
       }
     } catch (error: any) {
       console.error('Failed to create design:', error)
-      toast.error('Failed to create design: ' + (error.message || 'Unknown error'))
+      toast.error(
+        'Failed to create design: ' + (error.message || 'Unknown error')
+      )
     } finally {
       setCreatingDesign(false)
     }
@@ -270,7 +274,7 @@ export default function DashboardPage() {
               <button
                 onClick={createNewDesign}
                 disabled={creatingDesign || !user}
-                className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-400"
               >
                 {creatingDesign ? (
                   <>
