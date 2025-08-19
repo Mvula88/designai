@@ -19,22 +19,7 @@ import {
 import { toast } from 'sonner'
 import { useParams, useRouter } from 'next/navigation'
 
-// Dynamic imports with error boundaries
-const AdvancedFabricEditor = dynamic(
-  () => import('@/components/canvas/AdvancedFabricEditor').then(mod => mod.AdvancedFabricEditor),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading design editor...</p>
-        </div>
-      </div>
-    )
-  }
-)
-
+// Dynamic imports
 const FigmaLikeToolbar = dynamic(
   () => import('@/components/canvas/FigmaLikeToolbar').then(mod => mod.FigmaLikeToolbar),
   { ssr: false }
@@ -68,15 +53,67 @@ export default function EditorPage() {
   
   const supabase = createClient()
 
-  // Load fabric.js
+  // Load fabric.js and initialize canvas
   useEffect(() => {
-    const loadFabric = async () => {
-      const fabricLib = (window as any).fabric
-      if (fabricLib) {
-        setFabric(fabricLib)
+    const initializeFabric = async () => {
+      // Dynamically import fabric
+      const fabricModule = await import('fabric')
+      const fabricLib = fabricModule.fabric || (window as any).fabric
+      
+      if (!fabricLib || canvas) return
+      
+      // Find the canvas element
+      const canvasElement = document.getElementById('fabric-canvas') as HTMLCanvasElement
+      if (!canvasElement) return
+      
+      // Initialize fabric canvas
+      const newCanvas = new fabricLib.Canvas('fabric-canvas', {
+        width: window.innerWidth - 500,
+        height: window.innerHeight - 200,
+        backgroundColor: '#ffffff',
+        selection: true,
+        preserveObjectStacking: true,
+        renderOnAddRemove: true,
+        enableRetinaScaling: true,
+      })
+      
+      // Configure controls
+      if (fabricLib.Object && fabricLib.Object.prototype) {
+        fabricLib.Object.prototype.set({
+          transparentCorners: false,
+          cornerColor: '#9333ea',
+          cornerStrokeColor: '#9333ea',
+          borderColor: '#9333ea',
+          cornerSize: 12,
+          cornerStyle: 'circle',
+          borderScaleFactor: 2,
+        })
+      }
+      
+      setFabric(fabricLib)
+      setCanvas(newCanvas)
+      handleCanvasReady(newCanvas)
+      
+      // Handle window resize
+      const handleResize = () => {
+        const container = canvasElement.parentElement
+        if (container) {
+          newCanvas.setDimensions({
+            width: container.clientWidth,
+            height: container.clientHeight,
+          })
+          newCanvas.renderAll()
+        }
+      }
+      window.addEventListener('resize', handleResize)
+      handleResize()
+      
+      return () => {
+        window.removeEventListener('resize', handleResize)
       }
     }
-    loadFabric()
+    
+    setTimeout(initializeFabric, 100)
   }, [])
 
   // Load design data and pages
@@ -149,7 +186,8 @@ export default function EditorPage() {
   }
 
   const handleCanvasReady = (fabricCanvas: any) => {
-    setCanvas(fabricCanvas)
+    // Canvas is ready for use
+    console.log('Canvas ready:', fabricCanvas)
   }
 
   const handleCanvasSave = async (canvasData: any) => {
@@ -814,12 +852,10 @@ export default function EditorPage() {
             </div>
             
             {/* Canvas Area */}
-            <div className="relative w-full h-full overflow-hidden">
-              <AdvancedFabricEditor
-                designId={`${designId}-${currentPageId}`}
-                initialData={pages.find(p => p.id === currentPageId)?.canvas_data || designData?.canvas_data}
-                onCanvasReady={handleCanvasReady}
-                onSave={handleCanvasSave}
+            <div className="relative w-full h-full overflow-hidden bg-gray-50 flex items-center justify-center">
+              <canvas 
+                id="fabric-canvas"
+                className="shadow-2xl bg-white"
               />
             </div>
           </div>
