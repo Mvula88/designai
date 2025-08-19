@@ -4,14 +4,20 @@ import { useState, useEffect, Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { ClaudeAssistant } from '@/components/ai/ClaudeAssistant'
 import { VisionAnalyzer } from '@/components/ai/VisionAnalyzer'
-import { DesignToCodeBridge } from '@/components/canvas/DesignToCodeBridge'
 import DesignImportModal from '@/components/import/DesignImportModal'
 import { createClient } from '@/lib/supabase/client'
-import { ChevronLeft, ChevronRight, Upload, FileImage } from 'lucide-react'
+import { 
+  ChevronLeft, ChevronRight, ChevronUp, Upload, FileImage, 
+  MousePointer, Square, Circle, Type, PenTool, Image, 
+  Undo, Redo, Copy, Trash, Download, Save, Code,
+  Move, RotateCw, Maximize2, Minus, Triangle, Star,
+  AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline,
+  Layers, Lock, Unlock, Eye, EyeOff, Sparkles
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { useParams, useRouter } from 'next/navigation'
 
-// Dynamic import with error boundary
+// Dynamic imports with error boundaries
 const AdvancedFabricEditor = dynamic(
   () => import('@/components/canvas/AdvancedFabricEditor').then(mod => mod.AdvancedFabricEditor),
   { 
@@ -27,19 +33,42 @@ const AdvancedFabricEditor = dynamic(
   }
 )
 
+const FigmaLikeToolbar = dynamic(
+  () => import('@/components/canvas/FigmaLikeToolbar').then(mod => mod.FigmaLikeToolbar),
+  { ssr: false }
+)
+
+const DesignToCodeBridge = dynamic(
+  () => import('@/components/canvas/DesignToCodeBridge').then(mod => mod.DesignToCodeBridge),
+  { ssr: false }
+)
+
 export default function EditorPage() {
   const params = useParams()
   const router = useRouter()
   const designId = params.id as string
   const [canvas, setCanvas] = useState<any>(null)
+  const [fabric, setFabric] = useState<any>(null)
   const [designData, setDesignData] = useState<any>(null)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  const [activeTab, setActiveTab] = useState<'assistant' | 'import'>(
-    'assistant'
-  )
+  const [leftPanelOpen, setLeftPanelOpen] = useState(false)
+  const [codePanel, setCodePanel] = useState(false)
+  const [activeTool, setActiveTool] = useState('select')
+  const [activeTab, setActiveTab] = useState<'assistant' | 'import'>('assistant')
   const [saving, setSaving] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const supabase = createClient()
+
+  // Load fabric.js
+  useEffect(() => {
+    const loadFabric = async () => {
+      const fabricLib = (window as any).fabric
+      if (fabricLib) {
+        setFabric(fabricLib)
+      }
+    }
+    loadFabric()
+  }, [])
 
   // Load design data
   useEffect(() => {
@@ -81,22 +110,147 @@ export default function EditorPage() {
     setSaving(false)
     if (error) {
       toast.error('Failed to save design')
+    } else {
+      toast.success('Design saved')
     }
   }
 
-  const applyAIAnalysis = (fabricObjects: any[]) => {
+  // Tool functions
+  const addShape = (shapeType: string) => {
+    if (!canvas || !fabric) return
+
+    let shape
+    const center = canvas.getCenter()
+
+    switch (shapeType) {
+      case 'rect':
+        shape = new fabric.Rect({
+          left: center.left - 50,
+          top: center.top - 50,
+          width: 100,
+          height: 100,
+          fill: '#9333ea',
+          strokeWidth: 0,
+        })
+        break
+      case 'circle':
+        shape = new fabric.Circle({
+          left: center.left - 50,
+          top: center.top - 50,
+          radius: 50,
+          fill: '#3b82f6',
+          strokeWidth: 0,
+        })
+        break
+      case 'triangle':
+        shape = new fabric.Triangle({
+          left: center.left - 50,
+          top: center.top - 60,
+          width: 100,
+          height: 100,
+          fill: '#10b981',
+          strokeWidth: 0,
+        })
+        break
+      case 'line':
+        shape = new fabric.Line([center.left - 50, center.top, center.left + 50, center.top], {
+          stroke: '#000',
+          strokeWidth: 2,
+        })
+        break
+      case 'text':
+        shape = new fabric.IText('Type here', {
+          left: center.left - 50,
+          top: center.top - 20,
+          fontSize: 24,
+          fill: '#000',
+        })
+        break
+    }
+
+    if (shape) {
+      canvas.add(shape)
+      canvas.setActiveObject(shape)
+      canvas.renderAll()
+    }
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canvas || !fabric) return
+    
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const imgUrl = event.target?.result as string
+      fabric.Image.fromURL(imgUrl, (img: any) => {
+        const center = canvas.getCenter()
+        img.set({
+          left: center.left - (img.width * 0.5) / 2,
+          top: center.top - (img.height * 0.5) / 2,
+          scaleX: 0.5,
+          scaleY: 0.5,
+        })
+        canvas.add(img)
+        canvas.setActiveObject(img)
+        canvas.renderAll()
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const deleteSelected = () => {
     if (!canvas) return
+    const activeObjects = canvas.getActiveObjects()
+    if (activeObjects.length > 0) {
+      activeObjects.forEach((obj: any) => canvas.remove(obj))
+      canvas.discardActiveObject()
+      canvas.renderAll()
+      toast.success('Deleted')
+    }
+  }
+
+  const duplicateSelected = () => {
+    if (!canvas) return
+    const activeObject = canvas.getActiveObject()
+    if (!activeObject) return
+
+    activeObject.clone((cloned: any) => {
+      cloned.set({
+        left: cloned.left + 20,
+        top: cloned.top + 20,
+      })
+      canvas.add(cloned)
+      canvas.setActiveObject(cloned)
+      canvas.renderAll()
+    })
+  }
+
+  const handleUndo = () => {
+    if (!canvas) return
+    // Implement undo logic
+    toast.info('Undo action')
+  }
+
+  const handleRedo = () => {
+    if (!canvas) return
+    // Implement redo logic
+    toast.info('Redo action')
+  }
+
+  const applyAIAnalysis = (fabricObjects: any[]) => {
+    if (!canvas || !fabric) return
 
     fabricObjects.forEach((obj) => {
-      // Create fabric objects from the analysis
       if (obj.type === 'rect') {
-        const rect = new (window as any).fabric.Rect(obj)
+        const rect = new fabric.Rect(obj)
         canvas.add(rect)
       } else if (obj.type === 'circle') {
-        const circle = new (window as any).fabric.Circle(obj)
+        const circle = new fabric.Circle(obj)
         canvas.add(circle)
       } else if (obj.type === 'i-text') {
-        const text = new (window as any).fabric.IText(obj.text || 'Text', obj)
+        const text = new fabric.IText(obj.text || 'Text', obj)
         canvas.add(text)
       }
     })
@@ -106,18 +260,13 @@ export default function EditorPage() {
   }
 
   const handleImportDesign = (importedData: any) => {
-    // Apply imported design to canvas
     if (importedData.fabricObjects) {
       applyAIAnalysis(importedData.fabricObjects)
-    } else if (importedData.imageUrl && canvas) {
-      // Handle image import using fabric from window
-      const fabric = (window as any).fabric
-      if (fabric) {
-        fabric.Image.fromURL(importedData.imageUrl, (img: any) => {
-          canvas.add(img)
-          canvas.renderAll()
-        })
-      }
+    } else if (importedData.imageUrl && canvas && fabric) {
+      fabric.Image.fromURL(importedData.imageUrl, (img: any) => {
+        canvas.add(img)
+        canvas.renderAll()
+      })
     }
     setShowImportModal(false)
     toast.success('Design imported successfully!')
@@ -126,7 +275,6 @@ export default function EditorPage() {
   const executeAICommand = (command: any) => {
     if (!canvas) return
 
-    // Execute fabric.js commands from Claude
     command.fabricCommands?.forEach((cmd: any) => {
       try {
         const objects = canvas.getActiveObjects()
@@ -137,7 +285,6 @@ export default function EditorPage() {
             }
           })
         } else {
-          // Apply to canvas if no objects selected
           if (cmd.method === 'setBackgroundColor' && cmd.args) {
             canvas.setBackgroundColor(cmd.args[0], () => canvas.renderAll())
           }
@@ -153,12 +300,10 @@ export default function EditorPage() {
 
   const handleDeploy = async (filesJson: string) => {
     try {
-      // Save the design first
       if (designId && designId !== 'new') {
         await handleCanvasSave(canvas.toJSON())
       }
 
-      // Create a playground from the design
       const { data: playground, error } = await supabase
         .from('playgrounds')
         .insert({
@@ -175,7 +320,6 @@ export default function EditorPage() {
 
       if (error) throw error
 
-      // Navigate to playground for deployment
       router.push(`/playground/${playground.id}`)
       toast.success('Ready to deploy! Connect your GitHub/Vercel account.')
     } catch (error) {
@@ -185,55 +329,170 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
+    <div className="flex h-screen flex-col bg-gray-900">
       {/* Top Bar */}
-      <div className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4">
+      <div className="flex h-14 items-center justify-between border-b border-gray-800 bg-gray-900 px-4">
         <div className="flex items-center gap-4">
           <button
             onClick={() => (window.location.href = '/')}
-            className="flex items-center gap-1 rounded px-3 py-1 text-sm hover:bg-gray-100"
+            className="flex items-center gap-1 rounded px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-800"
           >
             <ChevronLeft className="h-4 w-4" />
             Back
           </button>
-          <div className="h-6 w-px bg-gray-300" />
-          <h1 className="text-lg font-semibold">
-            {designData?.title || 'Untitled Design'}
-          </h1>
-          {saving && <span className="text-sm text-gray-500">Saving...</span>}
+          
+          {/* Main Tools */}
+          <div className="flex items-center gap-1 border-l border-gray-700 pl-4">
+            <button
+              onClick={() => setActiveTool('select')}
+              className={`p-2 rounded ${activeTool === 'select' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+              title="Select (V)"
+            >
+              <MousePointer className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setActiveTool('move')}
+              className={`p-2 rounded ${activeTool === 'move' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+              title="Move"
+            >
+              <Move className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => addShape('rect')}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Rectangle (R)"
+            >
+              <Square className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => addShape('circle')}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Circle (O)"
+            >
+              <Circle className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => addShape('triangle')}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Triangle"
+            >
+              <Triangle className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => addShape('line')}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Line (L)"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setActiveTool('pen')}
+              className={`p-2 rounded ${activeTool === 'pen' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
+              title="Pen (P)"
+            >
+              <PenTool className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => addShape('text')}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Text (T)"
+            >
+              <Type className="h-4 w-4" />
+            </button>
+            
+            <div className="h-6 w-px bg-gray-700 mx-1" />
+            
+            {/* Edit Tools */}
+            <button
+              onClick={handleUndo}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Undo"
+            >
+              <Undo className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleRedo}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Redo"
+            >
+              <Redo className="h-4 w-4" />
+            </button>
+            <button
+              onClick={duplicateSelected}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Duplicate"
+            >
+              <Copy className="h-4 w-4" />
+            </button>
+            <button
+              onClick={deleteSelected}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Delete"
+            >
+              <Trash className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400">
+            {designData?.title || 'Untitled Design'}
+          </span>
+          {saving && <span className="text-xs text-gray-500">Saving...</span>}
+          
+          <div className="h-6 w-px bg-gray-700 mx-2" />
+          
+          <button
+            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+            className="p-2 rounded text-gray-400 hover:bg-gray-800"
+            title="Toggle Advanced Tools"
+          >
+            <Layers className="h-4 w-4" />
+          </button>
+          
           <button
             onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-2 rounded bg-gradient-to-r from-purple-600 to-blue-600 px-3 py-1.5 text-sm text-white hover:from-purple-700 hover:to-blue-700"
+            className="flex items-center gap-2 rounded bg-purple-600 px-3 py-1.5 text-sm text-white hover:bg-purple-700"
           >
             <Upload className="h-4 w-4" />
             Import Design
           </button>
+          
+          <button
+            onClick={() => setCodePanel(!codePanel)}
+            className="flex items-center gap-2 rounded bg-gradient-to-r from-purple-600 to-blue-600 px-3 py-1.5 text-sm text-white hover:from-purple-700 hover:to-blue-700"
+          >
+            <Sparkles className="h-4 w-4" />
+            Design to Code
+          </button>
+          
+          <button
+            onClick={() => handleCanvasSave(canvas?.toJSON())}
+            className="p-2 rounded text-gray-400 hover:bg-gray-800"
+            title="Save"
+          >
+            <Save className="h-4 w-4" />
+          </button>
+          
           <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            className="flex items-center gap-1 rounded border px-3 py-1 text-sm hover:bg-gray-100"
+            className="p-2 rounded text-gray-400 hover:bg-gray-800"
+            title="Toggle AI Panel"
           >
-            {rightPanelOpen ? (
-              <>
-                Hide AI Panel
-                <ChevronRight className="h-4 w-4" />
-              </>
-            ) : (
-              <>
-                <ChevronLeft className="h-4 w-4" />
-                Show AI Panel
-              </>
-            )}
+            {rightPanelOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Panel - Advanced Tools */}
+        {leftPanelOpen && canvas && fabric && (
+          <FigmaLikeToolbar canvas={canvas} fabric={fabric} />
+        )}
+
         {/* Canvas Editor */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative bg-gray-100">
           <AdvancedFabricEditor
             designId={designId}
             initialData={designData?.canvas_data}
@@ -241,26 +500,35 @@ export default function EditorPage() {
             onSave={handleCanvasSave}
           />
           
-          {/* Design to Code Bridge - Floating UI */}
-          {canvas && (
-            <DesignToCodeBridge 
-              canvas={canvas}
-              onDeploy={handleDeploy}
-            />
-          )}
+          {/* Image Upload Input (Hidden) */}
+          <input
+            type="file"
+            id="image-upload"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+          
+          {/* Floating Upload Button */}
+          <button
+            onClick={() => document.getElementById('image-upload')?.click()}
+            className="absolute bottom-4 right-4 p-3 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-700"
+            title="Upload Image"
+          >
+            <Image className="h-5 w-5" />
+          </button>
         </div>
 
-        {/* AI Panel */}
+        {/* Right Panel - AI Assistant */}
         {rightPanelOpen && (
-          <div className="flex w-96 flex-col border-l border-gray-200 bg-gray-50">
-            {/* Tab Navigation */}
-            <div className="flex border-b bg-white">
+          <div className="flex w-96 flex-col border-l border-gray-800 bg-gray-900">
+            <div className="flex border-b border-gray-800 bg-gray-900">
               <button
                 onClick={() => setActiveTab('assistant')}
                 className={`flex-1 py-3 text-sm font-medium ${
                   activeTab === 'assistant'
-                    ? 'border-b-2 border-purple-600 text-purple-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'border-b-2 border-purple-600 text-purple-400'
+                    : 'text-gray-400 hover:text-gray-300'
                 }`}
               >
                 AI Assistant
@@ -269,23 +537,43 @@ export default function EditorPage() {
                 onClick={() => setActiveTab('import')}
                 className={`flex-1 py-3 text-sm font-medium ${
                   activeTab === 'import'
-                    ? 'border-b-2 border-purple-600 text-purple-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'border-b-2 border-purple-600 text-purple-400'
+                    : 'text-gray-400 hover:text-gray-300'
                 }`}
               >
-                Import Design
+                Vision Analyzer
               </button>
             </div>
 
-            {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-4">
               {activeTab === 'assistant' && (
                 <ClaudeAssistant canvas={canvas} onCommand={executeAICommand} />
               )}
-
               {activeTab === 'import' && (
                 <VisionAnalyzer onAnalysisComplete={applyAIAnalysis} />
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Code Panel - Collapsible */}
+        {codePanel && canvas && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 transition-all duration-300"
+               style={{ height: '40vh', zIndex: 50 }}>
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800">
+              <h3 className="text-sm font-semibold text-gray-300">Design to Production</h3>
+              <button
+                onClick={() => setCodePanel(false)}
+                className="p-1 rounded hover:bg-gray-800 text-gray-400"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="h-full overflow-auto">
+              <DesignToCodeBridge 
+                canvas={canvas}
+                onDeploy={handleDeploy}
+              />
             </div>
           </div>
         )}
