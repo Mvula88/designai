@@ -24,38 +24,55 @@ export class VisualIntelligence {
    * Analyze canvas and identify component patterns
    */
   analyzeDesign(): ComponentMapping[] {
-    const objects = this.canvas.getObjects()
+    // Safely get objects from canvas
+    let objects: fabric.Object[] = []
+    try {
+      const canvasObjects = this.canvas.getObjects()
+      objects = Array.isArray(canvasObjects) ? canvasObjects : []
+    } catch (error) {
+      console.error('Failed to get canvas objects:', error)
+      return []
+    }
+
     const components: ComponentMapping[] = []
     const processed = new Set<fabric.Object>()
 
     // First pass: Identify high-level components
-    objects.forEach(obj => {
-      if (processed.has(obj)) return
+    for (const obj of objects) {
+      if (processed.has(obj)) continue
 
-      // Check for component patterns
-      if (this.isButton(obj)) {
-        components.push(this.createButton(obj))
-        processed.add(obj)
-      } else if (this.isInputField(obj)) {
-        components.push(this.createInput(obj))
-        processed.add(obj)
-      } else if (this.isCard(obj)) {
-        const card = this.createCard(obj)
-        components.push(card)
-        this.markGroupProcessed(obj, processed)
-      } else if (this.isNavbar(obj)) {
-        const navbar = this.createNavbar(obj)
-        components.push(navbar)
-        this.markGroupProcessed(obj, processed)
+      try {
+        // Check for component patterns
+        if (this.isButton(obj)) {
+          components.push(this.createButton(obj))
+          processed.add(obj)
+        } else if (this.isInputField(obj)) {
+          components.push(this.createInput(obj))
+          processed.add(obj)
+        } else if (this.isCard(obj)) {
+          const card = this.createCard(obj)
+          components.push(card)
+          this.markGroupProcessed(obj, processed)
+        } else if (this.isNavbar(obj)) {
+          const navbar = this.createNavbar(obj)
+          components.push(navbar)
+          this.markGroupProcessed(obj, processed)
+        }
+      } catch (error) {
+        console.warn('Failed to process object:', error)
       }
-    })
+    }
 
     // Second pass: Handle remaining objects
-    objects.forEach(obj => {
+    for (const obj of objects) {
       if (!processed.has(obj)) {
-        components.push(this.createGenericComponent(obj))
+        try {
+          components.push(this.createGenericComponent(obj))
+        } catch (error) {
+          console.warn('Failed to create generic component:', error)
+        }
       }
-    })
+    }
 
     return this.optimizeComponentTree(components)
   }
@@ -68,8 +85,18 @@ export class VisualIntelligence {
     
     // Check for button-like properties
     const hasRoundedCorners = (obj as any).rx > 0 || (obj as any).ry > 0
-    const hasText = obj.type === 'group' && 
-      (obj as fabric.Group).getObjects().some(o => o.type === 'text')
+    let hasText = false
+    
+    if (obj.type === 'group') {
+      try {
+        const groupObjects = (obj as fabric.Group).getObjects()
+        hasText = Array.isArray(groupObjects) && 
+          groupObjects.some(o => o.type === 'text')
+      } catch (error) {
+        console.warn('Failed to get group objects:', error)
+      }
+    }
+    
     const aspectRatio = (obj.width || 0) / (obj.height || 1)
     
     return hasRoundedCorners && hasText && aspectRatio > 2 && aspectRatio < 6
@@ -89,14 +116,21 @@ export class VisualIntelligence {
   private isCard(obj: fabric.Object): boolean {
     if (obj.type !== 'group') return false
     
-    const group = obj as fabric.Group
-    const objects = group.getObjects()
-    
-    // Card usually has: background rect + text + optional image
-    const hasBackground = objects.some(o => o.type === 'rect' && o.fill)
-    const hasText = objects.some(o => o.type === 'text')
-    
-    return hasBackground && hasText && objects.length >= 2
+    try {
+      const group = obj as fabric.Group
+      const objects = group.getObjects()
+      
+      if (!Array.isArray(objects)) return false
+      
+      // Card usually has: background rect + text + optional image
+      const hasBackground = objects.some(o => o.type === 'rect' && o.fill)
+      const hasText = objects.some(o => o.type === 'text')
+      
+      return hasBackground && hasText && objects.length >= 2
+    } catch (error) {
+      console.warn('Failed to check if card:', error)
+      return false
+    }
   }
 
   private isNavbar(obj: fabric.Object): boolean {
@@ -148,7 +182,13 @@ export class VisualIntelligence {
 
   private createCard(obj: fabric.Object): ComponentMapping {
     const group = obj as fabric.Group
-    const objects = group.getObjects()
+    let objects: fabric.Object[] = []
+    try {
+      const groupObjects = group.getObjects()
+      objects = Array.isArray(groupObjects) ? groupObjects : []
+    } catch (error) {
+      console.warn('Failed to get card objects:', error)
+    }
     const styles = this.extractStyles(group)
     
     // Extract card content
@@ -216,8 +256,15 @@ export class VisualIntelligence {
       return (obj as fabric.Text).text || null
     }
     if (obj.type === 'group') {
-      const textObj = (obj as fabric.Group).getObjects().find(o => o.type === 'text')
-      return textObj ? (textObj as fabric.Text).text || null : null
+      try {
+        const groupObjects = (obj as fabric.Group).getObjects()
+        if (Array.isArray(groupObjects)) {
+          const textObj = groupObjects.find(o => o.type === 'text')
+          return textObj ? (textObj as fabric.Text).text || null : null
+        }
+      } catch (error) {
+        console.warn('Failed to extract text from group:', error)
+      }
     }
     return null
   }
@@ -262,7 +309,15 @@ export class VisualIntelligence {
   }
 
   private findNearbyLabel(input: fabric.Rect): string | null {
-    const objects = this.canvas.getObjects()
+    let objects: fabric.Object[] = []
+    try {
+      const canvasObjects = this.canvas.getObjects()
+      objects = Array.isArray(canvasObjects) ? canvasObjects : []
+    } catch (error) {
+      console.warn('Failed to get canvas objects for label search:', error)
+      return null
+    }
+    
     const inputBounds = input.getBoundingRect()
     
     // Look for text above or to the left of the input
@@ -290,10 +345,17 @@ export class VisualIntelligence {
 
   private extractNavItems(obj: fabric.Object): string[] {
     if (obj.type === 'group') {
-      const group = obj as fabric.Group
-      return group.getObjects()
-        .filter(o => o.type === 'text')
-        .map(o => (o as fabric.Text).text || 'Nav Item')
+      try {
+        const group = obj as fabric.Group
+        const groupObjects = group.getObjects()
+        if (Array.isArray(groupObjects)) {
+          return groupObjects
+            .filter(o => o.type === 'text')
+            .map(o => (o as fabric.Text).text || 'Nav Item')
+        }
+      } catch (error) {
+        console.warn('Failed to extract nav items:', error)
+      }
     }
     return ['Home', 'About', 'Services', 'Contact']
   }
@@ -301,7 +363,14 @@ export class VisualIntelligence {
   private markGroupProcessed(obj: fabric.Object, processed: Set<fabric.Object>) {
     processed.add(obj)
     if (obj.type === 'group') {
-      (obj as fabric.Group).getObjects().forEach(o => processed.add(o))
+      try {
+        const groupObjects = (obj as fabric.Group).getObjects()
+        if (Array.isArray(groupObjects)) {
+          groupObjects.forEach(o => processed.add(o))
+        }
+      } catch (error) {
+        console.warn('Failed to mark group objects as processed:', error)
+      }
     }
   }
 
