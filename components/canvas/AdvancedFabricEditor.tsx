@@ -148,53 +148,59 @@ export function AdvancedFabricEditor({
       selectionDashArray: [5, 5],
     })
 
-    // Enhanced object controls
-    fabric.Object.prototype.set({
-      transparentCorners: false,
-      cornerColor: '#9333ea',
-      cornerStrokeColor: '#9333ea',
-      borderColor: '#9333ea',
-      cornerSize: 12,
-      cornerStyle: 'circle',
-      borderScaleFactor: 2,
-      borderOpacityWhenMoving: 0.5,
-      borderDashArray: [5, 5],
-      padding: 5,
-      lockScalingFlip: true,
-      centeredScaling: false,
-      centeredRotation: true,
-    })
+    // Enhanced object controls - check if fabric is fully loaded
+    if (fabric.Object && fabric.Object.prototype) {
+      fabric.Object.prototype.set({
+        transparentCorners: false,
+        cornerColor: '#9333ea',
+        cornerStrokeColor: '#9333ea',
+        borderColor: '#9333ea',
+        cornerSize: 12,
+        cornerStyle: 'circle',
+        borderScaleFactor: 2,
+        borderOpacityWhenMoving: 0.5,
+        borderDashArray: [5, 5],
+        padding: 5,
+        lockScalingFlip: true,
+        centeredScaling: false,
+        centeredRotation: true,
+      })
 
-    // Add custom controls
-    fabric.Object.prototype.controls.deleteControl = new fabric.Control({
-      x: 0.5,
-      y: -0.5,
-      offsetY: -16,
-      offsetX: 16,
-      cursorStyle: 'pointer',
-      mouseUpHandler: (eventData, target) => {
-        const canvas = target.canvas
-        canvas.remove(target)
-        canvas.requestRenderAll()
-        return true
-      },
-      render: (ctx, left, top) => {
-        ctx.save()
-        ctx.translate(left, top)
-        ctx.rotate(fabric.util.degreesToRadians(45))
-        ctx.fillStyle = '#ef4444'
-        ctx.fillRect(-8, -8, 16, 16)
-        ctx.strokeStyle = '#ffffff'
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(-4, 0)
-        ctx.lineTo(4, 0)
-        ctx.moveTo(0, -4)
-        ctx.lineTo(0, 4)
-        ctx.stroke()
-        ctx.restore()
-      },
-    })
+      // Add custom controls - ensure controls object exists
+      if (fabric.Control && fabric.Object.prototype.controls) {
+        fabric.Object.prototype.controls.deleteControl = new fabric.Control({
+          x: 0.5,
+          y: -0.5,
+          offsetY: -16,
+          offsetX: 16,
+          cursorStyle: 'pointer',
+          mouseUpHandler: (eventData, target) => {
+            const canvas = target.canvas
+            if (canvas) {
+              canvas.remove(target)
+              canvas.requestRenderAll()
+            }
+            return true
+          },
+          render: (ctx, left, top) => {
+            ctx.save()
+            ctx.translate(left, top)
+            ctx.rotate(fabric.util.degreesToRadians(45))
+            ctx.fillStyle = '#ef4444'
+            ctx.fillRect(-8, -8, 16, 16)
+            ctx.strokeStyle = '#ffffff'
+            ctx.lineWidth = 2
+            ctx.beginPath()
+            ctx.moveTo(-4, 0)
+            ctx.lineTo(4, 0)
+            ctx.moveTo(0, -4)
+            ctx.lineTo(0, 4)
+            ctx.stroke()
+            ctx.restore()
+          },
+        })
+      }
+    }
 
     // Load initial data
     if (initialData) {
@@ -231,14 +237,15 @@ export function AdvancedFabricEditor({
       if (onSave) onSave(newCanvas.toJSON())
     })
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => handleKeyPress(e, newCanvas))
+    // Keyboard shortcuts - create handler function
+    const keyHandler = (e: KeyboardEvent) => handleKeyPress(e, newCanvas)
+    document.addEventListener('keydown', keyHandler)
 
     setCanvas(newCanvas)
     if (onCanvasReady) onCanvasReady(newCanvas)
 
     return () => {
-      document.removeEventListener('keydown', handleKeyPress)
+      document.removeEventListener('keydown', keyHandler)
       newCanvas.dispose()
     }
   }, [fabric])

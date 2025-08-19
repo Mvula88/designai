@@ -1,0 +1,366 @@
+{
+  "sampleDesigns": {
+    "saaseDashboard": {
+      "name": "TaskFlow Pro - Project Management SaaS",
+      "description": "Modern project management dashboard",
+      "components": {
+        "header": {
+          "type": "sticky-header",
+          "content": {
+            "logo": "TaskFlow Pro",
+            "navigation": ["Dashboard", "Projects", "Team", "Analytics", "Settings"],
+            "userMenu": {
+              "avatar": "https://i.pravatar.cc/150?u=demo",
+              "name": "Sarah Chen",
+              "role": "Product Manager"
+            }
+          },
+          "styles": {
+            "background": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            "glassmorphism": true,
+            "height": "64px"
+          }
+        },
+        "hero": {
+          "type": "dashboard-hero",
+          "content": {
+            "greeting": "Welcome back, Sarah!",
+            "subtitle": "You have 5 tasks due today",
+            "stats": [
+              { "label": "Active Projects", "value": "12", "change": "+2", "trend": "up" },
+              { "label": "Tasks Completed", "value": "148", "change": "+23", "trend": "up" },
+              { "label": "Team Members", "value": "8", "change": "0", "trend": "neutral" },
+              { "label": "On Schedule", "value": "92%", "change": "+5%", "trend": "up" }
+            ]
+          }
+        },
+        "mainContent": {
+          "projectCards": [
+            {
+              "title": "Website Redesign",
+              "progress": 75,
+              "dueDate": "Dec 15, 2024",
+              "team": ["👤", "👤", "👤"],
+              "priority": "high",
+              "tasks": "12/16 completed"
+            },
+            {
+              "title": "Mobile App Launch",
+              "progress": 45,
+              "dueDate": "Jan 5, 2025",
+              "team": ["👤", "👤", "👤", "👤"],
+              "priority": "medium",
+              "tasks": "8/18 completed"
+            },
+            {
+              "title": "Marketing Campaign",
+              "progress": 90,
+              "dueDate": "Dec 10, 2024",
+              "team": ["👤", "👤"],
+              "priority": "high",
+              "tasks": "18/20 completed"
+            }
+          ],
+          "activityFeed": [
+            { "user": "Alex Rivera", "action": "completed task", "target": "Homepage mockup", "time": "2 hours ago" },
+            { "user": "Emma Wilson", "action": "commented on", "target": "API Documentation", "time": "3 hours ago" },
+            { "user": "Mike Johnson", "action": "uploaded", "target": "Brand Guidelines v2", "time": "5 hours ago" }
+          ]
+        },
+        "sidebar": {
+          "quickActions": [
+            { "icon": "➕", "label": "New Project", "color": "purple" },
+            { "icon": "👥", "label": "Invite Team", "color": "blue" },
+            { "icon": "📊", "label": "View Reports", "color": "green" },
+            { "icon": "⚙️", "label": "Settings", "color": "gray" }
+          ],
+          "upcomingTasks": [
+            { "title": "Design Review", "time": "2:00 PM", "priority": "high" },
+            { "title": "Client Call", "time": "3:30 PM", "priority": "medium" },
+            { "title": "Sprint Planning", "time": "4:00 PM", "priority": "high" }
+          ]
+        }
+      }
+    },
+    "ecommerceLanding": {
+      "name": "TechGear Store - Electronics E-commerce",
+      "description": "Modern e-commerce landing page",
+      "components": {
+        "header": {
+          "type": "ecommerce-header",
+          "content": {
+            "logo": "TechGear",
+            "navigation": ["Shop", "Deals", "New Arrivals", "Categories", "Support"],
+            "searchBar": true,
+            "cartIcon": { "count": 3 },
+            "wishlistIcon": { "count": 5 }
+          },
+          "styles": {
+            "background": "#ffffff",
+            "borderBottom": "1px solid #e5e7eb",
+            "sticky": true
+          }
+        },
+        "hero": {
+          "type": "product-hero",
+          "content": {
+            "headline": "Black Friday Mega Sale",
+            "subheadline": "Up to 70% off on premium electronics",
+            "cta": {
+              "primary": { "text": "Shop Now", "action": "browse" },
+              "secondary": { "text": "View Deals", "action": "deals" }
+            },
+            "backgroundImage": "gradient-mesh",
+            "featuredProduct": {
+              "name": "AirPods Pro 3",
+              "price": "$179",
+              "originalPrice": "$299",
+              "discount": "40% OFF",
+              "image": "airpods-hero.png"
+            }
+          }
+        },
+        "productGrid": {
+          "title": "Featured Products",
+          "products": [
+            {
+              "name": "MacBook Pro 14\"",
+              "price": "$1,799",
+              "originalPrice": "$2,499",
+              "rating": 4.8,
+              "reviews": 234,
+              "badge": "Best Seller",
+              "image": "macbook.jpg"
+            },
+            {
+              "name": "iPhone 15 Pro",
+              "price": "$899",
+              "originalPrice": "$1,199",
+              "rating": 4.9,
+              "reviews": 567,
+              "badge": "Hot Deal",
+              "image": "iphone.jpg"
+            },
+            {
+              "name": "iPad Air",
+              "price": "$499",
+              "originalPrice": "$749",
+              "rating": 4.7,
+              "reviews": 189,
+              "badge": "Limited Stock",
+              "image": "ipad.jpg"
+            },
+            {
+              "name": "Apple Watch Ultra",
+              "price": "$649",
+              "originalPrice": "$899",
+              "rating": 4.6,
+              "reviews": 145,
+              "badge": "New",
+              "image": "watch.jpg"
+            }
+          ]
+        },
+        "categories": {
+          "title": "Shop by Category",
+          "items": [
+            { "name": "Laptops", "icon": "💻", "count": "250+ items" },
+            { "name": "Phones", "icon": "📱", "count": "180+ items" },
+            { "name": "Audio", "icon": "🎧", "count": "120+ items" },
+            { "name": "Wearables", "icon": "⌚", "count": "90+ items" },
+            { "name": "Accessories", "icon": "🔌", "count": "300+ items" },
+            { "name": "Smart Home", "icon": "🏠", "count": "150+ items" }
+          ]
+        },
+        "testimonials": {
+          "title": "What Our Customers Say",
+          "reviews": [
+            {
+              "author": "Jessica M.",
+              "rating": 5,
+              "text": "Amazing deals and super fast delivery! Got my MacBook in perfect condition.",
+              "verified": true
+            },
+            {
+              "author": "David L.",
+              "rating": 5,
+              "text": "Best prices I've found online. Customer service is top-notch!",
+              "verified": true
+            },
+            {
+              "author": "Rachel K.",
+              "rating": 5,
+              "text": "Love the variety of products. Found everything I needed for my home office.",
+              "verified": true
+            }
+          ]
+        },
+        "newsletter": {
+          "headline": "Get 10% Off Your First Order",
+          "subtext": "Subscribe to our newsletter for exclusive deals",
+          "inputPlaceholder": "Enter your email",
+          "buttonText": "Subscribe",
+          "benefits": ["Exclusive deals", "Early access", "Free shipping offers"]
+        }
+      }
+    },
+    "portfolio": {
+      "name": "Creative Portfolio - Designer Showcase",
+      "description": "Minimalist portfolio for creatives",
+      "components": {
+        "header": {
+          "type": "minimal-header",
+          "content": {
+            "name": "Alex Chen",
+            "tagline": "Product Designer",
+            "navigation": ["Work", "About", "Services", "Contact"],
+            "socialLinks": ["twitter", "dribbble", "linkedin", "github"]
+          },
+          "styles": {
+            "background": "transparent",
+            "textColor": "#1a1a1a",
+            "minimal": true
+          }
+        },
+        "hero": {
+          "type": "portfolio-hero",
+          "content": {
+            "headline": "Crafting Digital Experiences",
+            "subheadline": "I help brands create meaningful connections through thoughtful design",
+            "cta": {
+              "primary": { "text": "View Work", "scroll": "portfolio" },
+              "secondary": { "text": "Get in Touch", "action": "contact" }
+            },
+            "backgroundPattern": "dots",
+            "featuredLogos": ["Google", "Apple", "Nike", "Spotify", "Airbnb"]
+          }
+        },
+        "portfolioGrid": {
+          "layout": "masonry",
+          "projects": [
+            {
+              "title": "Banking App Redesign",
+              "category": "Mobile Design",
+              "image": "project1.jpg",
+              "color": "#667eea"
+            },
+            {
+              "title": "E-commerce Platform",
+              "category": "Web Design",
+              "image": "project2.jpg",
+              "color": "#f59e0b"
+            },
+            {
+              "title": "Brand Identity",
+              "category": "Branding",
+              "image": "project3.jpg",
+              "color": "#10b981"
+            },
+            {
+              "title": "Dashboard Analytics",
+              "category": "Product Design",
+              "image": "project4.jpg",
+              "color": "#ef4444"
+            },
+            {
+              "title": "Travel App",
+              "category": "Mobile Design",
+              "image": "project5.jpg",
+              "color": "#3b82f6"
+            },
+            {
+              "title": "SaaS Landing Page",
+              "category": "Web Design",
+              "image": "project6.jpg",
+              "color": "#8b5cf6"
+            }
+          ]
+        },
+        "about": {
+          "headline": "About Me",
+          "bio": "I'm a product designer with 8 years of experience creating digital products that users love. I specialize in UI/UX design, design systems, and brand identity.",
+          "skills": ["UI/UX Design", "Prototyping", "Design Systems", "Branding", "Motion Design", "User Research"],
+          "experience": [
+            { "role": "Senior Product Designer", "company": "Tech Corp", "period": "2021-Present" },
+            { "role": "Product Designer", "company": "Design Studio", "period": "2018-2021" },
+            { "role": "UI Designer", "company": "Creative Agency", "period": "2016-2018" }
+          ]
+        },
+        "services": {
+          "headline": "How I Can Help",
+          "offerings": [
+            {
+              "title": "Product Design",
+              "description": "End-to-end product design from concept to launch",
+              "icon": "🎨"
+            },
+            {
+              "title": "Design Systems",
+              "description": "Scalable design systems for consistent experiences",
+              "icon": "🔧"
+            },
+            {
+              "title": "Brand Identity",
+              "description": "Complete brand identity and visual language",
+              "icon": "✨"
+            },
+            {
+              "title": "Consultation",
+              "description": "Design strategy and team workshops",
+              "icon": "💡"
+            }
+          ]
+        },
+        "contact": {
+          "headline": "Let's Work Together",
+          "subtext": "Have a project in mind? Let's create something amazing.",
+          "form": {
+            "fields": ["Name", "Email", "Project Type", "Message"],
+            "button": "Send Message"
+          },
+          "directContact": {
+            "email": "hello@alexchen.design",
+            "phone": "+1 (555) 123-4567",
+            "location": "San Francisco, CA"
+          }
+        }
+      }
+    }
+  },
+  "colorPalettes": {
+    "modern": {
+      "primary": "#667eea",
+      "secondary": "#764ba2",
+      "accent": "#f59e0b",
+      "success": "#10b981",
+      "warning": "#f59e0b",
+      "error": "#ef4444",
+      "neutral": "#6b7280"
+    },
+    "vibrant": {
+      "primary": "#3b82f6",
+      "secondary": "#8b5cf6",
+      "accent": "#ec4899",
+      "success": "#10b981",
+      "warning": "#f59e0b",
+      "error": "#ef4444",
+      "neutral": "#6b7280"
+    },
+    "minimal": {
+      "primary": "#1a1a1a",
+      "secondary": "#4a5568",
+      "accent": "#667eea",
+      "success": "#48bb78",
+      "warning": "#ed8936",
+      "error": "#f56565",
+      "neutral": "#a0aec0"
+    }
+  },
+  "animations": {
+    "fadeIn": "opacity: 0 to 1, duration: 0.5s",
+    "slideUp": "translateY: 20px to 0, opacity: 0 to 1, duration: 0.6s",
+    "scaleIn": "scale: 0.9 to 1, opacity: 0 to 1, duration: 0.4s",
+    "pulse": "scale: 1 to 1.05 to 1, duration: 2s, repeat: infinite",
+    "gradient": "background-position animation, duration: 3s, repeat: infinite"
+  }
+}

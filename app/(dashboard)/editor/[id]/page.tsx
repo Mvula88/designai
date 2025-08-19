@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { AdvancedFabricEditor } from '@/components/canvas/AdvancedFabricEditor'
+import { useState, useEffect, Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { ClaudeAssistant } from '@/components/ai/ClaudeAssistant'
 import { VisionAnalyzer } from '@/components/ai/VisionAnalyzer'
 import { DesignToCodeBridge } from '@/components/canvas/DesignToCodeBridge'
@@ -9,6 +9,22 @@ import { createClient } from '@/lib/supabase/client'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { useParams, useRouter } from 'next/navigation'
+
+// Dynamic import with error boundary
+const AdvancedFabricEditor = dynamic(
+  () => import('@/components/canvas/AdvancedFabricEditor').then(mod => mod.AdvancedFabricEditor),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading design editor...</p>
+        </div>
+      </div>
+    )
+  }
+)
 
 export default function EditorPage() {
   const params = useParams()
