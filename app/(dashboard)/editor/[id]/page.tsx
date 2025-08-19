@@ -51,6 +51,8 @@ export default function EditorPage() {
   const [strokeWidth, setStrokeWidth] = useState(2)
   const [zoom, setZoom] = useState(100)
   const [isPanning, setIsPanning] = useState(false)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [drawingPath, setDrawingPath] = useState<any>(null)
   
   // Multi-page functionality
   const [pages, setPages] = useState<any[]>([])
@@ -143,39 +145,135 @@ export default function EditorPage() {
         }
       }
       
-      // Add mouse panning support
+      // Add comprehensive mouse event handling for all tools
       let isPanningActive = false
+      let isDrawingMode = false
       let lastPosX = 0
       let lastPosY = 0
+      let currentPath: any = null
+      let pathPoints: any[] = []
+      
+      // Tool state management
+      const updateToolMode = (tool: string) => {
+        // Reset all modes
+        newCanvas.isDrawingMode = false
+        newCanvas.selection = true
+        isDrawingMode = false
+        
+        switch(tool) {
+          case 'select':
+            newCanvas.selection = true
+            newCanvas.defaultCursor = 'default'
+            break
+          case 'move':
+            newCanvas.selection = true
+            newCanvas.defaultCursor = 'move'
+            break
+          case 'pen':
+            isDrawingMode = true
+            newCanvas.selection = false
+            newCanvas.defaultCursor = 'crosshair'
+            break
+          case 'pan':
+            newCanvas.selection = false
+            newCanvas.defaultCursor = 'grab'
+            break
+        }
+      }
       
       newCanvas.on('mouse:down', (opt: any) => {
         const evt = opt.e
-        if (evt.altKey || evt.spaceKey || isPanning) {
+        const currentTool = (window as any).currentActiveTool || 'select'
+        
+        // Pan mode
+        if (evt.altKey || evt.spaceKey || isPanning || currentTool === 'pan') {
           isPanningActive = true
           setIsPanning(true)
           newCanvas.selection = false
+          newCanvas.defaultCursor = 'grabbing'
           lastPosX = evt.clientX
           lastPosY = evt.clientY
+          return
+        }
+        
+        // Pen tool - start drawing path
+        if (currentTool === 'pen' && !evt.altKey) {
+          isDrawingMode = true
+          const pointer = newCanvas.getPointer(evt)
+          pathPoints = [pointer.x, pointer.y, pointer.x, pointer.y]
+          currentPath = new fabricLib.Path(`M ${pointer.x} ${pointer.y}`, {
+            stroke: (window as any).currentSelectedColor || '#9333ea',
+            strokeWidth: (window as any).currentStrokeWidth || 2,
+            fill: null,
+            strokeLineCap: 'round',
+            strokeLineJoin: 'round',
+          })
         }
       })
       
       newCanvas.on('mouse:move', (opt: any) => {
+        const evt = opt.e
+        const currentTool = (window as any).currentActiveTool || 'select'
+        
+        // Panning
         if (isPanningActive) {
-          const evt = opt.e
           const deltaX = evt.clientX - lastPosX
           const deltaY = evt.clientY - lastPosY
           newCanvas.relativePan({ x: deltaX, y: deltaY })
           lastPosX = evt.clientX
           lastPosY = evt.clientY
           newCanvas.renderAll()
+          return
+        }
+        
+        // Pen tool - continue drawing
+        if (isDrawingMode && currentTool === 'pen' && currentPath) {
+          const pointer = newCanvas.getPointer(evt)
+          pathPoints.push(pointer.x, pointer.y)
+          
+          // Create smooth path
+          let pathData = `M ${pathPoints[0]} ${pathPoints[1]}`
+          for (let i = 2; i < pathPoints.length; i += 2) {
+            pathData += ` L ${pathPoints[i]} ${pathPoints[i + 1]}`
+          }
+          
+          if (currentPath) {
+            newCanvas.remove(currentPath)
+          }
+          
+          currentPath = new fabricLib.Path(pathData, {
+            stroke: (window as any).currentSelectedColor || '#9333ea',
+            strokeWidth: (window as any).currentStrokeWidth || 2,
+            fill: null,
+            strokeLineCap: 'round',
+            strokeLineJoin: 'round',
+          })
+          newCanvas.add(currentPath)
+          newCanvas.renderAll()
         }
       })
       
       newCanvas.on('mouse:up', () => {
-        isPanningActive = false
-        setIsPanning(false)
-        newCanvas.selection = true
+        const currentTool = (window as any).currentActiveTool || 'select'
+        
+        // End panning
+        if (isPanningActive) {
+          isPanningActive = false
+          setIsPanning(false)
+          newCanvas.selection = currentTool === 'select'
+          newCanvas.defaultCursor = currentTool === 'pan' ? 'grab' : 'default'
+        }
+        
+        // End pen drawing
+        if (isDrawingMode && currentPath) {
+          isDrawingMode = false
+          currentPath = null
+          pathPoints = []
+        }
       })
+      
+      // Store tool updater globally
+      (window as any).updateCanvasTool = updateToolMode
       
       // Mouse wheel zoom
       newCanvas.on('mouse:wheel', (opt: any) => {
@@ -261,6 +359,11 @@ export default function EditorPage() {
       document.addEventListener('keydown', handleKeyDown)
       document.addEventListener('keyup', handleKeyUp)
       
+      // Store global references for tools
+      ;(window as any).currentSelectedColor = '#9333ea'
+      ;(window as any).currentStrokeWidth = 2
+      ;(window as any).currentActiveTool = 'select'
+      
       setFabric(fabricLib)
       setCanvas(newCanvas)
       handleCanvasReady(newCanvas)
@@ -302,6 +405,15 @@ export default function EditorPage() {
       initializeDefaultPages()
     }
   }, [designId])
+  
+  // Update global color and stroke width
+  useEffect(() => {
+    ;(window as any).currentSelectedColor = selectedColor
+  }, [selectedColor])
+  
+  useEffect(() => {
+    ;(window as any).currentStrokeWidth = strokeWidth
+  }, [strokeWidth])
 
   const loadDesign = async () => {
     const { data, error } = await supabase
@@ -1106,7 +1218,13 @@ export default function EditorPage() {
         <div className="w-14 bg-gray-900 border-r border-gray-800 flex flex-col items-center py-2 gap-1">
           {/* Selection Tools */}
           <button
-            onClick={() => setActiveTool('select')}
+            onClick={() => {
+              setActiveTool('select')
+              ;(window as any).currentActiveTool = 'select'
+              if ((window as any).updateCanvasTool) {
+                (window as any).updateCanvasTool('select')
+              }
+            }}
             className={`p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all ${activeTool === 'select' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
             title="Select (V)"
           >
@@ -1114,7 +1232,13 @@ export default function EditorPage() {
           </button>
           
           <button
-            onClick={() => setActiveTool('move')}
+            onClick={() => {
+              setActiveTool('move')
+              ;(window as any).currentActiveTool = 'move'
+              if ((window as any).updateCanvasTool) {
+                (window as any).updateCanvasTool('move')
+              }
+            }}
             className={`p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all ${activeTool === 'move' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
             title="Move (H)"
           >
@@ -1168,7 +1292,13 @@ export default function EditorPage() {
           
           {/* Text & Drawing */}
           <button
-            onClick={() => setActiveTool('pen')}
+            onClick={() => {
+              setActiveTool('pen')
+              ;(window as any).currentActiveTool = 'pen'
+              if ((window as any).updateCanvasTool) {
+                (window as any).updateCanvasTool('pen')
+              }
+            }}
             className={`p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all ${activeTool === 'pen' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
             title="Pen (P)"
           >
@@ -1279,7 +1409,7 @@ export default function EditorPage() {
               </div>
               
               {/* Floating Zoom Controls */}
-              <div className="absolute bottom-4 left-4 bg-gray-900 rounded-lg shadow-lg p-2 flex items-center gap-2">
+              <div className="absolute bottom-20 left-4 bg-gray-900 rounded-lg shadow-lg p-2 flex items-center gap-2 z-50">
                 <button
                   onClick={() => {
                     const newZoom = Math.max(25, zoom - 10)
