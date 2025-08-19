@@ -927,68 +927,8 @@ export default function EditorPage() {
             Back
           </button>
           
-          {/* Main Tools */}
+          {/* Edit Tools Only */}
           <div className="flex items-center gap-1 border-l border-gray-700 pl-4">
-            <button
-              onClick={() => setActiveTool('select')}
-              className={`p-2 rounded ${activeTool === 'select' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
-              title="Select (V)"
-            >
-              <MousePointer className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setActiveTool('move')}
-              className={`p-2 rounded ${activeTool === 'move' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
-              title="Move"
-            >
-              <Move className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => addShape('rect')}
-              className="p-2 rounded text-gray-400 hover:bg-gray-800"
-              title="Rectangle (R)"
-            >
-              <Square className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => addShape('circle')}
-              className="p-2 rounded text-gray-400 hover:bg-gray-800"
-              title="Circle (O)"
-            >
-              <Circle className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => addShape('triangle')}
-              className="p-2 rounded text-gray-400 hover:bg-gray-800"
-              title="Triangle"
-            >
-              <Triangle className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => addShape('line')}
-              className="p-2 rounded text-gray-400 hover:bg-gray-800"
-              title="Line (L)"
-            >
-              <Minus className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setActiveTool('pen')}
-              className={`p-2 rounded ${activeTool === 'pen' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-800'}`}
-              title="Pen (P)"
-            >
-              <PenTool className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => addShape('text')}
-              className="p-2 rounded text-gray-400 hover:bg-gray-800"
-              title="Text (T)"
-            >
-              <Type className="h-4 w-4" />
-            </button>
-            
-            <div className="h-6 w-px bg-gray-700 mx-1" />
-            
-            {/* Edit Tools */}
             <button
               onClick={handleUndo}
               className="p-2 rounded text-gray-400 hover:bg-gray-800"
@@ -1127,14 +1067,6 @@ export default function EditorPage() {
           <div className="h-6 w-px bg-gray-700 mx-2" />
           
           <button
-            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-            className="p-2 rounded text-gray-400 hover:bg-gray-800"
-            title="Toggle Advanced Tools"
-          >
-            <Layers className="h-4 w-4" />
-          </button>
-          
-          <button
             onClick={() => setShowImportModal(true)}
             className="flex items-center gap-2 rounded bg-purple-600 px-3 py-1.5 text-sm text-white hover:bg-purple-700"
           >
@@ -1170,7 +1102,100 @@ export default function EditorPage() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Left Panel - Advanced Tools */}
+        {/* Left Sidebar - Tool Palette */}
+        <div className="w-14 bg-gray-900 border-r border-gray-800 flex flex-col items-center py-2 gap-1">
+          {/* Selection Tools */}
+          <button
+            onClick={() => setActiveTool('select')}
+            className={`p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all ${activeTool === 'select' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+            title="Select (V)"
+          >
+            <MousePointer className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => setActiveTool('move')}
+            className={`p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all ${activeTool === 'move' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+            title="Move (H)"
+          >
+            <Move className="h-4 w-4" />
+          </button>
+          
+          <div className="w-10 h-px bg-gray-700 my-1" />
+          
+          {/* Shape Tools */}
+          <button
+            onClick={() => addShape('rect')}
+            className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
+            title="Rectangle (R)"
+          >
+            <Square className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => addShape('circle')}
+            className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
+            title="Circle (O)"
+          >
+            <Circle className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => addShape('triangle')}
+            className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
+            title="Triangle"
+          >
+            <Triangle className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => addShape('star')}
+            className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
+            title="Star"
+          >
+            <Star className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => addShape('line')}
+            className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
+            title="Line (L)"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          
+          <div className="w-10 h-px bg-gray-700 my-1" />
+          
+          {/* Text & Drawing */}
+          <button
+            onClick={() => setActiveTool('pen')}
+            className={`p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all ${activeTool === 'pen' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+            title="Pen (P)"
+          >
+            <PenTool className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => addShape('text')}
+            className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
+            title="Text (T)"
+          >
+            <Type className="h-4 w-4" />
+          </button>
+          
+          <div className="w-10 h-px bg-gray-700 my-1" />
+          
+          {/* More Tools */}
+          <button
+            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+            className={`p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all mt-auto ${leftPanelOpen ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+            title="Advanced Tools"
+          >
+            <Layers className="h-4 w-4" />
+          </button>
+        </div>
+        
+        {/* Extended Tools Panel - Advanced Tools */}
         {leftPanelOpen && canvas && fabric && (
           <FigmaLikeToolbar canvas={canvas} fabric={fabric} />
         )}
