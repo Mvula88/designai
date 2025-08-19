@@ -100,6 +100,9 @@ export function AdvancedFabricEditor({
   const [history, setHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [showLayers, setShowLayers] = useState(true)
+  const [isPanning, setIsPanning] = useState(false)
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const [showMinimap, setShowMinimap] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [gradientMode, setGradientMode] = useState(false)
   const [shadowEnabled, setShadowEnabled] = useState(false)
@@ -236,19 +239,60 @@ export function AdvancedFabricEditor({
       saveToHistory(newCanvas)
       if (onSave) onSave(newCanvas.toJSON())
     })
+    
+    // Mouse panning support
+    let isPanningActive = false
+    let lastPosX = 0
+    let lastPosY = 0
+    
+    newCanvas.on('mouse:down', (opt) => {
+      if (selectedTool === 'pan' || opt.e.spaceKey) {
+        isPanningActive = true
+        newCanvas.selection = false
+        lastPosX = opt.e.clientX
+        lastPosY = opt.e.clientY
+      }
+    })
+    
+    newCanvas.on('mouse:move', (opt) => {
+      if (isPanningActive) {
+        const deltaX = opt.e.clientX - lastPosX
+        const deltaY = opt.e.clientY - lastPosY
+        newCanvas.relativePan({ x: deltaX, y: deltaY })
+        lastPosX = opt.e.clientX
+        lastPosY = opt.e.clientY
+      }
+    })
+    
+    newCanvas.on('mouse:up', () => {
+      isPanningActive = false
+      if (selectedTool !== 'pan') {
+        newCanvas.selection = true
+      }
+    })
 
     // Keyboard shortcuts - create handler function
     const keyHandler = (e: KeyboardEvent) => handleKeyPress(e, newCanvas)
+    const keyUpHandler = (e: KeyboardEvent) => {
+      if (e.key === ' ') {
+        e.preventDefault()
+        setSelectedTool('select')
+        setIsPanning(false)
+      }
+    }
+    
     document.addEventListener('keydown', keyHandler)
+    document.addEventListener('keyup', keyUpHandler)
 
     setCanvas(newCanvas)
     if (onCanvasReady) onCanvasReady(newCanvas)
 
     return () => {
       document.removeEventListener('keydown', keyHandler)
+      document.removeEventListener('keyup', keyUpHandler)
       newCanvas.dispose()
     }
-  }, [fabric])
+  }, [fabric, selectedTool])
 
   // Update properties panel when objects are selected
   const updatePropertiesPanel = (objects: any[]) => {
@@ -297,6 +341,12 @@ export function AdvancedFabricEditor({
 
   // Keyboard shortcuts
   const handleKeyPress = useCallback((e: KeyboardEvent, fabricCanvas: any) => {
+    // Space: Pan mode
+    if (e.key === ' ' && !e.repeat) {
+      e.preventDefault()
+      setSelectedTool('pan')
+      setIsPanning(true)
+    }
     // Ctrl/Cmd + Z: Undo
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
       e.preventDefault()
@@ -1077,15 +1127,118 @@ export function AdvancedFabricEditor({
         </div>
 
         {/* Canvas Area */}
-        <div className="flex-1 flex">
-          <div className="flex-1 overflow-auto p-8 bg-gray-100">
-            <div className="inline-block bg-white rounded-lg shadow-2xl">
-              <canvas ref={canvasRef} />
+        <div className="flex-1 flex relative">
+          {/* Canvas Viewport with Professional Scrolling */}
+          <div 
+            className="flex-1 overflow-auto bg-gray-100 relative"
+            style={{ cursor: isPanning ? 'grabbing' : selectedTool === 'pan' ? 'grab' : 'default' }}
+            onWheel={(e) => {
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault()
+                const delta = e.deltaY > 0 ? -10 : 10
+                const newZoom = Math.max(10, Math.min(500, zoom + delta))
+                setZoom(newZoom)
+                if (canvas) {
+                  canvas.setZoom(newZoom / 100)
+                  canvas.renderAll()
+                }
+              }
+            }}
+          >
+            {/* Canvas Container */}
+            <div 
+              className="relative"
+              style={{
+                width: '5000px',
+                height: '5000px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+                transition: isPanning ? 'none' : 'transform 0.1s ease-out'
+              }}
+            >
+              <div className="bg-white rounded-lg shadow-2xl">
+                <canvas ref={canvasRef} />
+              </div>
+            </div>
+            
+            {/* Mini Canvas Controls */}
+            <div className="fixed bottom-4 left-20 bg-white rounded-lg shadow-lg p-2 flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const newZoom = Math.max(10, zoom - 10)
+                  setZoom(newZoom)
+                  if (canvas) {
+                    canvas.setZoom(newZoom / 100)
+                    canvas.renderAll()
+                  }
+                }}
+                className="p-1 rounded hover:bg-gray-100"
+                title="Zoom Out"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </button>
+              <input
+                type="range"
+                min="10"
+                max="500"
+                value={zoom}
+                onChange={(e) => {
+                  const newZoom = Number(e.target.value)
+                  setZoom(newZoom)
+                  if (canvas) {
+                    canvas.setZoom(newZoom / 100)
+                    canvas.renderAll()
+                  }
+                }}
+                className="w-24"
+              />
+              <button
+                onClick={() => {
+                  const newZoom = Math.min(500, zoom + 10)
+                  setZoom(newZoom)
+                  if (canvas) {
+                    canvas.setZoom(newZoom / 100)
+                    canvas.renderAll()
+                  }
+                }}
+                className="p-1 rounded hover:bg-gray-100"
+                title="Zoom In"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </button>
+              <span className="px-2 text-sm font-medium w-12 text-center">
+                {zoom}%
+              </span>
+              <div className="w-px h-6 bg-gray-300" />
+              <button
+                onClick={() => {
+                  setZoom(100)
+                  setPanOffset({ x: 0, y: 0 })
+                  if (canvas) {
+                    canvas.setZoom(1)
+                    canvas.setViewportTransform([1, 0, 0, 1, 0, 0])
+                    canvas.renderAll()
+                  }
+                }}
+                className="p-1 rounded hover:bg-gray-100"
+                title="Reset View"
+              >
+                <Maximize className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setSelectedTool(selectedTool === 'pan' ? 'select' : 'pan')}
+                className={`p-1 rounded ${selectedTool === 'pan' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100'}`}
+                title="Pan Tool (Hold Space)"
+              >
+                <Hand className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
           {/* Right Panel - Properties */}
-          <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
+          <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto flex-shrink-0" style={{ maxHeight: 'calc(100vh - 60px)' }}>
             {/* Color Section */}
             <div className="p-4 border-b border-gray-200">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
