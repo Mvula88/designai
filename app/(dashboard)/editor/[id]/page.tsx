@@ -49,6 +49,8 @@ export default function EditorPage() {
   const [snapToGrid, setSnapToGrid] = useState(false)
   const [selectedColor, setSelectedColor] = useState('#9333ea')
   const [strokeWidth, setStrokeWidth] = useState(2)
+  const [zoom, setZoom] = useState(100)
+  const [isPanning, setIsPanning] = useState(false)
   
   // Multi-page functionality
   const [pages, setPages] = useState<any[]>([])
@@ -141,8 +143,62 @@ export default function EditorPage() {
         }
       }
       
+      // Add mouse panning support
+      let isPanningActive = false
+      let lastPosX = 0
+      let lastPosY = 0
+      
+      newCanvas.on('mouse:down', (opt: any) => {
+        const evt = opt.e
+        if (evt.altKey || evt.spaceKey || isPanning) {
+          isPanningActive = true
+          setIsPanning(true)
+          newCanvas.selection = false
+          lastPosX = evt.clientX
+          lastPosY = evt.clientY
+        }
+      })
+      
+      newCanvas.on('mouse:move', (opt: any) => {
+        if (isPanningActive) {
+          const evt = opt.e
+          const deltaX = evt.clientX - lastPosX
+          const deltaY = evt.clientY - lastPosY
+          newCanvas.relativePan({ x: deltaX, y: deltaY })
+          lastPosX = evt.clientX
+          lastPosY = evt.clientY
+          newCanvas.renderAll()
+        }
+      })
+      
+      newCanvas.on('mouse:up', () => {
+        isPanningActive = false
+        setIsPanning(false)
+        newCanvas.selection = true
+      })
+      
+      // Mouse wheel zoom
+      newCanvas.on('mouse:wheel', (opt: any) => {
+        const delta = opt.e.deltaY
+        let zoom = newCanvas.getZoom()
+        zoom *= 0.999 ** delta
+        if (zoom > 4) zoom = 4
+        if (zoom < 0.25) zoom = 0.25
+        newCanvas.setZoom(zoom)
+        opt.e.preventDefault()
+        opt.e.stopPropagation()
+        setZoom(Math.round(zoom * 100))
+      })
+      
       // Add keyboard shortcuts for professional workflow
       const handleKeyDown = (e: KeyboardEvent) => {
+        // Space bar for panning
+        if (e.key === ' ' && !e.repeat) {
+          e.preventDefault()
+          setIsPanning(true)
+          newCanvas.selection = false
+        }
+        
         // Prevent browser defaults for design shortcuts
         if (e.key === 'Delete' || e.key === 'Backspace') {
           e.preventDefault()
@@ -194,7 +250,16 @@ export default function EditorPage() {
         }
       }
       
+      const handleKeyUp = (e: KeyboardEvent) => {
+        if (e.key === ' ') {
+          e.preventDefault()
+          setIsPanning(false)
+          newCanvas.selection = true
+        }
+      }
+      
       document.addEventListener('keydown', handleKeyDown)
+      document.addEventListener('keyup', handleKeyUp)
       
       setFabric(fabricLib)
       setCanvas(newCanvas)
@@ -202,6 +267,7 @@ export default function EditorPage() {
       
       return () => {
         document.removeEventListener('keydown', handleKeyDown)
+        document.removeEventListener('keyup', handleKeyUp)
       }
       
       // Handle window resize
@@ -980,26 +1046,30 @@ export default function EditorPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Page Switcher */}
-          <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
+          {/* Page Switcher with Scroll */}
+          <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1 max-w-lg overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
             {pages.map((page, index) => {
               const IconComponent = {
                 Home, User, Mail, FileText, ShoppingCart, Settings, Layout, Grid, Globe
               }[page.icon] || FileText
 
               return (
-                <button
+                <div
                   key={page.id}
-                  onClick={() => switchPage(page.id)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
+                  className={`group flex items-center gap-1 px-2 py-1 rounded text-xs transition-all flex-shrink-0 ${
                     currentPageId === page.id
                       ? 'bg-purple-600 text-white'
                       : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700'
                   }`}
-                  title={page.name}
                 >
-                  <IconComponent className="h-3 w-3" />
-                  <span className="hidden sm:inline">{page.name}</span>
+                  <button
+                    onClick={() => switchPage(page.id)}
+                    className="flex items-center gap-1"
+                    title={page.name}
+                  >
+                    <IconComponent className="h-3 w-3" />
+                    <span className="whitespace-nowrap">{page.name}</span>
+                  </button>
                   {pages.length > 1 && (
                     <button
                       onClick={(e) => {
@@ -1011,7 +1081,7 @@ export default function EditorPage() {
                       <X className="h-2 w-2" />
                     </button>
                   )}
-                </button>
+                </div>
               )
             })}
             
@@ -1144,12 +1214,93 @@ export default function EditorPage() {
               </div>
             </div>
             
-            {/* Canvas Area */}
-            <div className="relative w-full h-full overflow-hidden bg-gray-50 flex items-center justify-center">
-              <canvas 
-                id="fabric-canvas"
-                className="shadow-2xl bg-white"
-              />
+            {/* Canvas Area with Zoom/Pan */}
+            <div 
+              className="relative w-full h-full overflow-auto bg-gray-50"
+              style={{ 
+                cursor: isPanning ? 'grabbing' : 'default',
+              }}
+              onWheel={(e) => {
+                if (e.ctrlKey || e.metaKey) {
+                  e.preventDefault()
+                  const delta = e.deltaY > 0 ? -10 : 10
+                  const newZoom = Math.max(25, Math.min(400, zoom + delta))
+                  setZoom(newZoom)
+                  if (canvas) {
+                    canvas.setZoom(newZoom / 100)
+                    canvas.setDimensions({
+                      width: (window.innerWidth - 500) * (newZoom / 100),
+                      height: (window.innerHeight - 200) * (newZoom / 100),
+                    })
+                    canvas.renderAll()
+                  }
+                }
+              }}
+            >
+              <div 
+                className="flex items-center justify-center"
+                style={{
+                  minWidth: '100%',
+                  minHeight: '100%',
+                  padding: '2rem',
+                  transform: `scale(${zoom / 100})`,
+                  transformOrigin: 'center center',
+                }}
+              >
+                <canvas 
+                  id="fabric-canvas"
+                  className="shadow-2xl bg-white"
+                />
+              </div>
+              
+              {/* Floating Zoom Controls */}
+              <div className="absolute bottom-4 left-4 bg-gray-900 rounded-lg shadow-lg p-2 flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const newZoom = Math.max(25, zoom - 10)
+                    setZoom(newZoom)
+                    if (canvas) {
+                      canvas.setZoom(newZoom / 100)
+                      canvas.renderAll()
+                    }
+                  }}
+                  className="p-1 rounded hover:bg-gray-800 text-gray-400"
+                  title="Zoom Out"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="text-sm text-gray-400 font-medium w-12 text-center">
+                  {zoom}%
+                </span>
+                <button
+                  onClick={() => {
+                    const newZoom = Math.min(400, zoom + 10)
+                    setZoom(newZoom)
+                    if (canvas) {
+                      canvas.setZoom(newZoom / 100)
+                      canvas.renderAll()
+                    }
+                  }}
+                  className="p-1 rounded hover:bg-gray-800 text-gray-400"
+                  title="Zoom In"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+                <div className="w-px h-6 bg-gray-700" />
+                <button
+                  onClick={() => {
+                    setZoom(100)
+                    if (canvas) {
+                      canvas.setZoom(1)
+                      canvas.renderAll()
+                    }
+                  }}
+                  className="p-1 rounded hover:bg-gray-800 text-gray-400"
+                  title="Reset Zoom"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
           
