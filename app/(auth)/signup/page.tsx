@@ -62,10 +62,10 @@ export default function SignupPage() {
   }
 
   const features = [
-    'Unlimited designs',
-    'AI-powered assistance',
-    'Export in multiple formats',
-    'Real-time collaboration',
+    'Ship apps without writing code',
+    'Import from Figma, Sketch & Canva',
+    'One-click deploy to Vercel',
+    'Earn 70% selling components',
   ]
 
   return (
@@ -73,11 +73,18 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <Sparkles className="h-10 w-10 text-purple-600" />
-            <h1 className="text-3xl font-bold text-gray-900">DesignOS</h1>
+          <Link href="/" className="inline-flex flex-col items-center gap-2">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl blur-lg opacity-60" />
+              <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-3">
+                <Sparkles className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              DesignShip
+            </h1>
           </Link>
-          <p className="mt-2 text-gray-600">Create your free account</p>
+          <p className="mt-2 text-gray-600">Ship apps without code - Create your free account</p>
         </div>
 
         {/* Signup Form */}

@@ -230,9 +230,18 @@ export default function DashboardPage() {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut()
-      router.push('/login')
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Clear any local storage
+      localStorage.clear()
+      sessionStorage.clear()
+      
+      // Force redirect
+      toast.success('Signed out successfully')
+      window.location.href = '/login'
     } catch (error) {
+      console.error('Sign out error:', error)
       toast.error('Failed to sign out')
     }
   }

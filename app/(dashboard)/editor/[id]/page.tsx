@@ -5,8 +5,9 @@ import dynamic from 'next/dynamic'
 import { ClaudeAssistant } from '@/components/ai/ClaudeAssistant'
 import { VisionAnalyzer } from '@/components/ai/VisionAnalyzer'
 import { DesignToCodeBridge } from '@/components/canvas/DesignToCodeBridge'
+import DesignImportModal from '@/components/import/DesignImportModal'
 import { createClient } from '@/lib/supabase/client'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Upload, FileImage } from 'lucide-react'
 import { toast } from 'sonner'
 import { useParams, useRouter } from 'next/navigation'
 
@@ -37,6 +38,7 @@ export default function EditorPage() {
     'assistant'
   )
   const [saving, setSaving] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const supabase = createClient()
 
   // Load design data
@@ -101,6 +103,24 @@ export default function EditorPage() {
 
     canvas.renderAll()
     toast.success('AI design applied to canvas')
+  }
+
+  const handleImportDesign = (importedData: any) => {
+    // Apply imported design to canvas
+    if (importedData.fabricObjects) {
+      applyAIAnalysis(importedData.fabricObjects)
+    } else if (importedData.imageUrl && canvas) {
+      // Handle image import using fabric from window
+      const fabric = (window as any).fabric
+      if (fabric) {
+        fabric.Image.fromURL(importedData.imageUrl, (img: any) => {
+          canvas.add(img)
+          canvas.renderAll()
+        })
+      }
+    }
+    setShowImportModal(false)
+    toast.success('Design imported successfully!')
   }
 
   const executeAICommand = (command: any) => {
@@ -185,6 +205,13 @@ export default function EditorPage() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 rounded bg-gradient-to-r from-purple-600 to-blue-600 px-3 py-1.5 text-sm text-white hover:from-purple-700 hover:to-blue-700"
+          >
+            <Upload className="h-4 w-4" />
+            Import Design
+          </button>
+          <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
             className="flex items-center gap-1 rounded border px-3 py-1 text-sm hover:bg-gray-100"
           >
@@ -263,6 +290,13 @@ export default function EditorPage() {
           </div>
         )}
       </div>
+
+      {/* Import Modal */}
+      <DesignImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={handleImportDesign}
+      />
     </div>
   )
 }
