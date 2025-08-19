@@ -363,6 +363,63 @@ export default function EditorPage() {
       ;(window as any).currentSelectedColor = '#9333ea'
       ;(window as any).currentStrokeWidth = 2
       ;(window as any).currentActiveTool = 'select'
+      ;(window as any).fabric = fabricLib  // Store fabric globally
+      ;(window as any).editorCanvas = newCanvas  // Store canvas globally
+      
+      // Global shape creation function
+      ;(window as any).createShape = (type: string) => {
+        const center = newCanvas.getCenter()
+        const size = 100
+        const color = (window as any).currentSelectedColor || '#9333ea'
+        let shape = null
+        
+        switch(type) {
+          case 'rect':
+            shape = new fabricLib.Rect({
+              left: center.left - size/2,
+              top: center.top - size/2,
+              width: size,
+              height: size,
+              fill: color,
+            })
+            break
+          case 'circle':
+            shape = new fabricLib.Circle({
+              left: center.left - size/2,
+              top: center.top - size/2,
+              radius: size/2,
+              fill: color,
+            })
+            break
+          case 'triangle':
+            shape = new fabricLib.Triangle({
+              left: center.left - size/2,
+              top: center.top - size/2,
+              width: size,
+              height: size,
+              fill: color,
+            })
+            break
+          case 'text':
+            shape = new fabricLib.IText('Type your text', {
+              left: center.left,
+              top: center.top,
+              fontSize: 24,
+              fill: color,
+              originX: 'center',
+              originY: 'center',
+            })
+            break
+        }
+        
+        if (shape) {
+          newCanvas.add(shape)
+          newCanvas.setActiveObject(shape)
+          newCanvas.renderAll()
+          return true
+        }
+        return false
+      }
       
       setFabric(fabricLib)
       setCanvas(newCanvas)
@@ -657,128 +714,148 @@ export default function EditorPage() {
 
   // Professional shape creation like Figma
   const addShape = (shapeType: string) => {
-    if (!canvas || !fabric) return
+    if (!canvas) {
+      console.error('Canvas not initialized')
+      toast.error('Canvas not ready')
+      return
+    }
+    
+    // Get fabric from window or state
+    const fabricLib = fabric || (window as any).fabric
+    if (!fabricLib) {
+      console.error('Fabric.js not loaded')
+      toast.error('Drawing library not loaded')
+      return
+    }
 
     let shape
     const center = canvas.getCenter()
     const defaultSize = 100
+    const currentColor = selectedColor || '#9333ea'
+    const currentStroke = strokeWidth || 2
 
-    switch (shapeType) {
-      case 'rect':
-        shape = new fabric.Rect({
-          left: center.left - defaultSize/2,
-          top: center.top - defaultSize/2,
-          width: defaultSize,
-          height: defaultSize,
-          fill: selectedColor,
-          stroke: null,
-          strokeWidth: strokeWidth,
-          rx: 0,
-          ry: 0,
-        })
-        break
-      case 'circle':
-        shape = new fabric.Circle({
-          left: center.left - defaultSize/2,
-          top: center.top - defaultSize/2,
-          radius: defaultSize/2,
-          fill: selectedColor,
-          stroke: null,
-          strokeWidth: strokeWidth,
-        })
-        break
-      case 'triangle':
-        shape = new fabric.Triangle({
-          left: center.left - defaultSize/2,
-          top: center.top - defaultSize/2,
-          width: defaultSize,
-          height: defaultSize,
-          fill: selectedColor,
-          stroke: null,
-          strokeWidth: strokeWidth,
-        })
-        break
-      case 'line':
-        shape = new fabric.Line(
-          [center.left - defaultSize/2, center.top, center.left + defaultSize/2, center.top],
-          {
-            stroke: selectedColor,
-            strokeWidth: strokeWidth,
-            strokeLineCap: 'round',
-          }
-        )
-        break
-      case 'star':
-        const spikes = 5
-        const outerRadius = defaultSize/2
-        const innerRadius = defaultSize/4
-        const points = []
-        const cx = 0
-        const cy = 0
-        
-        for (let i = 0; i < spikes * 2; i++) {
-          const radius = i % 2 === 0 ? outerRadius : innerRadius
-          const angle = (Math.PI * i) / spikes - Math.PI / 2
-          points.push({
-            x: cx + Math.cos(angle) * radius,
-            y: cy + Math.sin(angle) * radius,
+    try {
+      switch (shapeType) {
+        case 'rect':
+          shape = new fabricLib.Rect({
+            left: center.left - defaultSize/2,
+            top: center.top - defaultSize/2,
+            width: defaultSize,
+            height: defaultSize,
+            fill: currentColor,
+            stroke: null,
+            strokeWidth: 0,
+            rx: 0,
+            ry: 0,
           })
-        }
-        
-        shape = new fabric.Polygon(points, {
-          left: center.left,
-          top: center.top,
-          fill: selectedColor,
-          stroke: null,
-          strokeWidth: strokeWidth,
-          originX: 'center',
-          originY: 'center',
-        })
-        break
-      case 'ellipse':
-        shape = new fabric.Ellipse({
-          left: center.left - defaultSize/2,
-          top: center.top - defaultSize/3,
-          rx: defaultSize/2,
-          ry: defaultSize/3,
-          fill: selectedColor,
-          stroke: null,
-          strokeWidth: strokeWidth,
-        })
-        break
-      case 'text':
-        shape = new fabric.IText('Type your text', {
-          left: center.left,
-          top: center.top,
-          fontSize: 24,
-          fill: selectedColor,
-          fontFamily: 'Inter, system-ui, sans-serif',
-          originX: 'center',
-          originY: 'center',
-        })
-        break
-      case 'frame':
-        shape = new fabric.Rect({
-          left: center.left - 200,
-          top: center.top - 150,
-          width: 400,
-          height: 300,
-          fill: 'transparent',
-          stroke: '#e5e7eb',
-          strokeWidth: 1,
-          strokeDashArray: [5, 5],
-          selectable: true,
-          hasControls: true,
-          hasBorders: true,
-        })
-        break
-    }
+          break
+        case 'circle':
+          shape = new fabricLib.Circle({
+            left: center.left - defaultSize/2,
+            top: center.top - defaultSize/2,
+            radius: defaultSize/2,
+            fill: currentColor,
+            stroke: null,
+            strokeWidth: 0,
+          })
+          break
+        case 'triangle':
+          shape = new fabricLib.Triangle({
+            left: center.left - defaultSize/2,
+            top: center.top - defaultSize/2,
+            width: defaultSize,
+            height: defaultSize,
+            fill: currentColor,
+            stroke: null,
+            strokeWidth: 0,
+          })
+          break
+        case 'line':
+          shape = new fabricLib.Line(
+            [center.left - defaultSize/2, center.top, center.left + defaultSize/2, center.top],
+            {
+              stroke: currentColor,
+              strokeWidth: currentStroke,
+              strokeLineCap: 'round',
+            }
+          )
+          break
+        case 'star':
+          const spikes = 5
+          const outerRadius = defaultSize/2
+          const innerRadius = defaultSize/4
+          const points = []
+          const cx = 0
+          const cy = 0
+          
+          for (let i = 0; i < spikes * 2; i++) {
+            const radius = i % 2 === 0 ? outerRadius : innerRadius
+            const angle = (Math.PI * i) / spikes - Math.PI / 2
+            points.push({
+              x: cx + Math.cos(angle) * radius,
+              y: cy + Math.sin(angle) * radius,
+            })
+          }
+          
+          shape = new fabricLib.Polygon(points, {
+            left: center.left,
+            top: center.top,
+            fill: currentColor,
+            stroke: null,
+            strokeWidth: 0,
+            originX: 'center',
+            originY: 'center',
+          })
+          break
+        case 'text':
+          shape = new fabricLib.IText('Type your text', {
+            left: center.left,
+            top: center.top,
+            fontSize: 24,
+            fill: currentColor,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            originX: 'center',
+            originY: 'center',
+          })
+          // Immediately enter editing mode for text
+          setTimeout(() => {
+            if (shape) {
+              canvas.setActiveObject(shape)
+              shape.enterEditing()
+              shape.selectAll()
+            }
+          }, 100)
+          break
+        case 'frame':
+          shape = new fabricLib.Rect({
+            left: center.left - 200,
+            top: center.top - 150,
+            width: 400,
+            height: 300,
+            fill: 'transparent',
+            stroke: '#e5e7eb',
+            strokeWidth: 1,
+            strokeDashArray: [5, 5],
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+          })
+          break
+      }
 
-    if (shape) {
-      canvas.add(shape)
-      canvas.setActiveObject(shape)
-      canvas.renderAll()
-      toast.success(`Added ${shapeType}`)
+      if (shape) {
+        canvas.add(shape)
+        canvas.setActiveObject(shape)
+        canvas.renderAll()
+        toast.success(`Added ${shapeType}`)
+        console.log(`Successfully added ${shapeType}`, shape)
+      } else {
+        console.error(`Failed to create shape: ${shapeType}`)
+        toast.error(`Failed to add ${shapeType}`)
+      }
+    } catch (error) {
+      console.error(`Error creating ${shapeType}:`, error)
+      toast.error(`Error adding ${shapeType}`)
     }
   }
 
@@ -1249,7 +1326,10 @@ export default function EditorPage() {
           
           {/* Shape Tools */}
           <button
-            onClick={() => addShape('rect')}
+            onClick={() => {
+              console.log('Rectangle button clicked')
+              addShape('rect')
+            }}
             className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
             title="Rectangle (R)"
           >
@@ -1257,7 +1337,10 @@ export default function EditorPage() {
           </button>
           
           <button
-            onClick={() => addShape('circle')}
+            onClick={() => {
+              console.log('Circle button clicked')
+              addShape('circle')
+            }}
             className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
             title="Circle (O)"
           >
@@ -1265,7 +1348,10 @@ export default function EditorPage() {
           </button>
           
           <button
-            onClick={() => addShape('triangle')}
+            onClick={() => {
+              console.log('Triangle button clicked')
+              addShape('triangle')
+            }}
             className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
             title="Triangle"
           >
@@ -1273,7 +1359,10 @@ export default function EditorPage() {
           </button>
           
           <button
-            onClick={() => addShape('star')}
+            onClick={() => {
+              console.log('Star button clicked')
+              addShape('star')
+            }}
             className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
             title="Star"
           >
@@ -1281,7 +1370,10 @@ export default function EditorPage() {
           </button>
           
           <button
-            onClick={() => addShape('line')}
+            onClick={() => {
+              console.log('Line button clicked')
+              addShape('line')
+            }}
             className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
             title="Line (L)"
           >
@@ -1306,7 +1398,10 @@ export default function EditorPage() {
           </button>
           
           <button
-            onClick={() => addShape('text')}
+            onClick={() => {
+              console.log('Text button clicked')
+              addShape('text')
+            }}
             className="p-2.5 rounded-lg w-10 h-10 flex items-center justify-center transition-all text-gray-400 hover:bg-gray-800 hover:text-white"
             title="Text (T)"
           >
