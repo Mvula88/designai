@@ -69,11 +69,24 @@ export default function EditorPage() {
       const fabricModule = await import('fabric')
       const fabricLib = fabricModule.fabric || (window as any).fabric
       
-      if (!fabricLib || canvas) return
+      if (!fabricLib) {
+        console.error('Fabric.js not loaded')
+        return
+      }
       
-      // Find the canvas element
+      // Skip if already initialized
+      if (canvas && (window as any).editorCanvas) {
+        console.log('Canvas already initialized')
+        return
+      }
+      
+      // Find the canvas element with retry logic
       const canvasElement = document.getElementById('fabric-canvas') as HTMLCanvasElement
-      if (!canvasElement) return
+      if (!canvasElement) {
+        console.log('Canvas element not found, retrying...')
+        setTimeout(initializeFabric, 200)
+        return
+      }
       
       // Initialize fabric canvas with professional settings
       const newCanvas = new fabricLib.Canvas('fabric-canvas', {
@@ -714,9 +727,36 @@ export default function EditorPage() {
 
   // Professional shape creation like Figma
   const addShape = (shapeType: string) => {
-    if (!canvas) {
-      console.error('Canvas not initialized')
-      toast.error('Canvas not ready')
+    // Try to get canvas from state or global
+    const currentCanvas = canvas || (window as any).editorCanvas
+    if (!currentCanvas) {
+      console.error('Canvas not initialized, attempting to initialize...')
+      
+      // Try to initialize canvas if not ready
+      const canvasElement = document.getElementById('fabric-canvas') as HTMLCanvasElement
+      if (canvasElement) {
+        const initFabric = async () => {
+          const fabricModule = await import('fabric')
+          const fabricLib = fabricModule.fabric || (window as any).fabric
+          if (fabricLib && !canvas) {
+            const newCanvas = new fabricLib.Canvas('fabric-canvas', {
+              width: window.innerWidth - 500,
+              height: window.innerHeight - 200,
+              backgroundColor: '#ffffff',
+            })
+            setCanvas(newCanvas)
+            ;(window as any).editorCanvas = newCanvas
+            ;(window as any).fabric = fabricLib
+            setFabric(fabricLib)
+            
+            // Retry shape creation after initialization
+            setTimeout(() => addShape(shapeType), 100)
+          }
+        }
+        initFabric()
+      } else {
+        toast.error('Canvas not ready. Please refresh the page.')
+      }
       return
     }
     
@@ -729,7 +769,7 @@ export default function EditorPage() {
     }
 
     let shape
-    const center = canvas.getCenter()
+    const center = currentCanvas.getCenter()
     const defaultSize = 100
     const currentColor = selectedColor || '#9333ea'
     const currentStroke = strokeWidth || 2
@@ -820,7 +860,7 @@ export default function EditorPage() {
           // Immediately enter editing mode for text
           setTimeout(() => {
             if (shape) {
-              canvas.setActiveObject(shape)
+              currentCanvas.setActiveObject(shape)
               shape.enterEditing()
               shape.selectAll()
             }
@@ -844,9 +884,9 @@ export default function EditorPage() {
       }
 
       if (shape) {
-        canvas.add(shape)
-        canvas.setActiveObject(shape)
-        canvas.renderAll()
+        currentCanvas.add(shape)
+        currentCanvas.setActiveObject(shape)
+        currentCanvas.renderAll()
         toast.success(`Added ${shapeType}`)
         console.log(`Successfully added ${shapeType}`, shape)
       } else {
