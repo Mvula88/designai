@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Upload, Loader2, Eye, Download } from 'lucide-react'
+import { Upload, Loader2, ScanLine, Download, Image, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useDropzone } from 'react-dropzone'
 
@@ -43,7 +43,7 @@ export function VisionAnalyzer({
         },
         body: JSON.stringify({
           imageUrl: base64,
-          analysisType: 'design_archaeology',
+          analysisType: 'design_import',
         }),
       })
 
@@ -83,27 +83,27 @@ export function VisionAnalyzer({
   return (
     <div className="space-y-4">
       {/* Upload Area */}
-      <div className="rounded-lg bg-white p-4 shadow">
-        <h3 className="mb-4 flex items-center gap-2 font-semibold">
-          <Eye className="h-5 w-5 text-blue-500" />
-          Design Archaeology
+      <div className="rounded-lg bg-gray-800 p-4">
+        <h3 className="mb-4 flex items-center gap-2 font-semibold text-white">
+          <ScanLine className="h-5 w-5 text-purple-400" />
+          Import from Image
         </h3>
 
         <div
           {...getRootProps()}
           className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
             isDragActive
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-purple-500 bg-purple-900/20'
+              : 'border-gray-600 hover:border-purple-400 bg-gray-700/50'
           }`}
         >
           <input {...getInputProps()} />
 
           {analyzing ? (
             <div className="flex flex-col items-center">
-              <Loader2 className="mb-2 h-8 w-8 animate-spin text-blue-500" />
-              <p className="text-sm text-gray-600">
-                Analyzing design with Claude Vision...
+              <Loader2 className="mb-2 h-8 w-8 animate-spin text-purple-400" />
+              <p className="text-sm text-gray-300">
+                Analyzing design with AI Vision...
               </p>
             </div>
           ) : imagePreview ? (
@@ -113,17 +113,20 @@ export function VisionAnalyzer({
                 alt="Preview"
                 className="mx-auto max-h-32 rounded"
               />
-              <p className="text-sm text-gray-600">
-                Drop another image to analyze
+              <p className="text-sm text-gray-300">
+                Click or drop another image to analyze
               </p>
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <Upload className="mb-2 h-8 w-8 text-gray-400" />
-              <p className="text-sm text-gray-600">
+              <Image className="mb-2 h-8 w-8 text-gray-500" />
+              <p className="text-sm text-gray-300">
                 {isDragActive
                   ? 'Drop the image here...'
-                  : 'Drag & drop an image, or click to select'}
+                  : 'Drop a design screenshot or click to browse'}
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Supports: Figma, Sketch, Adobe XD screenshots
               </p>
             </div>
           )}
@@ -132,14 +135,17 @@ export function VisionAnalyzer({
 
       {/* Analysis Results */}
       {analysisResult && (
-        <div className="rounded-lg bg-white p-4 shadow">
-          <h4 className="mb-3 font-medium">Analysis Results</h4>
+        <div className="rounded-lg bg-gray-800 p-4">
+          <h4 className="mb-3 font-medium text-white flex items-center gap-2">
+            <Wand2 className="h-4 w-4 text-purple-400" />
+            Detected Elements
+          </h4>
 
           <div className="space-y-3">
             {/* Description */}
             <div>
-              <p className="text-sm font-medium text-gray-700">Description:</p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm font-medium text-gray-400">Analysis:</p>
+              <p className="text-sm text-gray-300">
                 {analysisResult.description}
               </p>
             </div>

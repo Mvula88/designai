@@ -44,6 +44,11 @@ export default function EditorPage() {
   const [activeTab, setActiveTab] = useState<'assistant' | 'import'>('assistant')
   const [saving, setSaving] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [showGrid, setShowGrid] = useState(false)
+  const [showRulers, setShowRulers] = useState(false)
+  const [snapToGrid, setSnapToGrid] = useState(false)
+  const [selectedColor, setSelectedColor] = useState('#9333ea')
+  const [strokeWidth, setStrokeWidth] = useState(2)
   
   // Multi-page functionality
   const [pages, setPages] = useState<any[]>([])
@@ -66,7 +71,7 @@ export default function EditorPage() {
       const canvasElement = document.getElementById('fabric-canvas') as HTMLCanvasElement
       if (!canvasElement) return
       
-      // Initialize fabric canvas
+      // Initialize fabric canvas with professional settings
       const newCanvas = new fabricLib.Canvas('fabric-canvas', {
         width: window.innerWidth - 500,
         height: window.innerHeight - 200,
@@ -75,24 +80,129 @@ export default function EditorPage() {
         preserveObjectStacking: true,
         renderOnAddRemove: true,
         enableRetinaScaling: true,
+        controlsAboveOverlay: true,
+        allowTouchScrolling: true,
+        imageSmoothingEnabled: true,
+        selectionColor: 'rgba(147, 51, 234, 0.1)',
+        selectionBorderColor: '#9333ea',
+        selectionLineWidth: 2,
+        selectionDashArray: [5, 5],
+        snapAngle: 45,
+        snapThreshold: 5,
+        centeredScaling: true,
+        centeredRotation: true,
       })
       
-      // Configure controls
+      // Configure professional controls like Figma
       if (fabricLib.Object && fabricLib.Object.prototype) {
         fabricLib.Object.prototype.set({
           transparentCorners: false,
           cornerColor: '#9333ea',
-          cornerStrokeColor: '#9333ea',
+          cornerStrokeColor: '#ffffff',
           borderColor: '#9333ea',
-          cornerSize: 12,
-          cornerStyle: 'circle',
-          borderScaleFactor: 2,
+          cornerSize: 8,
+          cornerStyle: 'rect',
+          borderScaleFactor: 1.5,
+          borderOpacityWhenMoving: 0.5,
+          borderDashArray: null,
+          padding: 0,
+          lockScalingFlip: true,
+          noScaleCache: false,
+          strokeUniform: true,
         })
+        
+        // Add custom delete control
+        if (fabricLib.Object.prototype.controls) {
+          const deleteIcon = "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3Csvg width='20' height='20' fill='%23ef4444' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm3.54 11.54L10 10l-3.54 3.54-.92-.92L9.08 10 5.54 6.46l.92-.92L10 9.08l3.54-3.54.92.92L10.92 10l3.54 3.54-.92.92z'/%3E%3C/svg%3E"
+          const deleteImg = new Image()
+          deleteImg.src = deleteIcon
+          
+          fabricLib.Object.prototype.controls.deleteControl = new fabricLib.Control({
+            x: 0.5,
+            y: -0.5,
+            offsetY: -20,
+            offsetX: 20,
+            cursorStyle: 'pointer',
+            mouseUpHandler: (eventData, target) => {
+              const canvas = target.canvas
+              if (canvas) {
+                canvas.remove(target)
+                canvas.requestRenderAll()
+              }
+              return true
+            },
+            render: function(ctx, left, top, styleOverride, fabricObject) {
+              ctx.save()
+              ctx.translate(left, top)
+              ctx.drawImage(deleteImg, -10, -10, 20, 20)
+              ctx.restore()
+            },
+          })
+        }
       }
+      
+      // Add keyboard shortcuts for professional workflow
+      const handleKeyDown = (e: KeyboardEvent) => {
+        // Prevent browser defaults for design shortcuts
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault()
+          const activeObjects = newCanvas.getActiveObjects()
+          activeObjects.forEach((obj: any) => newCanvas.remove(obj))
+          newCanvas.discardActiveObject()
+          newCanvas.renderAll()
+        }
+        
+        // Duplicate (Ctrl/Cmd + D)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+          e.preventDefault()
+          const activeObject = newCanvas.getActiveObject()
+          if (activeObject) {
+            activeObject.clone((cloned: any) => {
+              cloned.set({
+                left: (cloned.left || 0) + 10,
+                top: (cloned.top || 0) + 10,
+              })
+              newCanvas.add(cloned)
+              newCanvas.setActiveObject(cloned)
+              newCanvas.renderAll()
+            })
+          }
+        }
+        
+        // Group (Ctrl/Cmd + G)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+          e.preventDefault()
+          const activeObjects = newCanvas.getActiveObjects()
+          if (activeObjects.length > 1) {
+            const group = new fabricLib.Group(activeObjects)
+            newCanvas.remove(...activeObjects)
+            newCanvas.add(group)
+            newCanvas.setActiveObject(group)
+            newCanvas.renderAll()
+          }
+        }
+        
+        // Select All (Ctrl/Cmd + A)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+          e.preventDefault()
+          newCanvas.discardActiveObject()
+          const selection = new fabricLib.ActiveSelection(newCanvas.getObjects(), {
+            canvas: newCanvas,
+          })
+          newCanvas.setActiveObject(selection)
+          newCanvas.renderAll()
+        }
+      }
+      
+      document.addEventListener('keydown', handleKeyDown)
       
       setFabric(fabricLib)
       setCanvas(newCanvas)
       handleCanvasReady(newCanvas)
+      
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown)
+      }
       
       // Handle window resize
       const handleResize = () => {
@@ -367,55 +477,121 @@ export default function EditorPage() {
     toast.success('Page renamed')
   }
 
-  // Tool functions
+  // Professional shape creation like Figma
   const addShape = (shapeType: string) => {
     if (!canvas || !fabric) return
 
     let shape
     const center = canvas.getCenter()
+    const defaultSize = 100
 
     switch (shapeType) {
       case 'rect':
         shape = new fabric.Rect({
-          left: center.left - 50,
-          top: center.top - 50,
-          width: 100,
-          height: 100,
-          fill: '#9333ea',
-          strokeWidth: 0,
+          left: center.left - defaultSize/2,
+          top: center.top - defaultSize/2,
+          width: defaultSize,
+          height: defaultSize,
+          fill: selectedColor,
+          stroke: null,
+          strokeWidth: strokeWidth,
+          rx: 0,
+          ry: 0,
         })
         break
       case 'circle':
         shape = new fabric.Circle({
-          left: center.left - 50,
-          top: center.top - 50,
-          radius: 50,
-          fill: '#3b82f6',
-          strokeWidth: 0,
+          left: center.left - defaultSize/2,
+          top: center.top - defaultSize/2,
+          radius: defaultSize/2,
+          fill: selectedColor,
+          stroke: null,
+          strokeWidth: strokeWidth,
         })
         break
       case 'triangle':
         shape = new fabric.Triangle({
-          left: center.left - 50,
-          top: center.top - 60,
-          width: 100,
-          height: 100,
-          fill: '#10b981',
-          strokeWidth: 0,
+          left: center.left - defaultSize/2,
+          top: center.top - defaultSize/2,
+          width: defaultSize,
+          height: defaultSize,
+          fill: selectedColor,
+          stroke: null,
+          strokeWidth: strokeWidth,
         })
         break
       case 'line':
-        shape = new fabric.Line([center.left - 50, center.top, center.left + 50, center.top], {
-          stroke: '#000',
-          strokeWidth: 2,
+        shape = new fabric.Line(
+          [center.left - defaultSize/2, center.top, center.left + defaultSize/2, center.top],
+          {
+            stroke: selectedColor,
+            strokeWidth: strokeWidth,
+            strokeLineCap: 'round',
+          }
+        )
+        break
+      case 'star':
+        const spikes = 5
+        const outerRadius = defaultSize/2
+        const innerRadius = defaultSize/4
+        const points = []
+        const cx = 0
+        const cy = 0
+        
+        for (let i = 0; i < spikes * 2; i++) {
+          const radius = i % 2 === 0 ? outerRadius : innerRadius
+          const angle = (Math.PI * i) / spikes - Math.PI / 2
+          points.push({
+            x: cx + Math.cos(angle) * radius,
+            y: cy + Math.sin(angle) * radius,
+          })
+        }
+        
+        shape = new fabric.Polygon(points, {
+          left: center.left,
+          top: center.top,
+          fill: selectedColor,
+          stroke: null,
+          strokeWidth: strokeWidth,
+          originX: 'center',
+          originY: 'center',
+        })
+        break
+      case 'ellipse':
+        shape = new fabric.Ellipse({
+          left: center.left - defaultSize/2,
+          top: center.top - defaultSize/3,
+          rx: defaultSize/2,
+          ry: defaultSize/3,
+          fill: selectedColor,
+          stroke: null,
+          strokeWidth: strokeWidth,
         })
         break
       case 'text':
-        shape = new fabric.IText('Type here', {
-          left: center.left - 50,
-          top: center.top - 20,
+        shape = new fabric.IText('Type your text', {
+          left: center.left,
+          top: center.top,
           fontSize: 24,
-          fill: '#000',
+          fill: selectedColor,
+          fontFamily: 'Inter, system-ui, sans-serif',
+          originX: 'center',
+          originY: 'center',
+        })
+        break
+      case 'frame':
+        shape = new fabric.Rect({
+          left: center.left - 200,
+          top: center.top - 150,
+          width: 400,
+          height: 300,
+          fill: 'transparent',
+          stroke: '#e5e7eb',
+          strokeWidth: 1,
+          strokeDashArray: [5, 5],
+          selectable: true,
+          hasControls: true,
+          hasBorders: true,
         })
         break
     }
@@ -424,6 +600,7 @@ export default function EditorPage() {
       canvas.add(shape)
       canvas.setActiveObject(shape)
       canvas.renderAll()
+      toast.success(`Added ${shapeType}`)
     }
   }
 
@@ -489,6 +666,97 @@ export default function EditorPage() {
     if (!canvas) return
     // Implement redo logic
     toast.info('Redo action')
+  }
+
+  // Professional alignment functions like Figma
+  const alignObjects = (alignment: string) => {
+    if (!canvas) return
+    const activeObjects = canvas.getActiveObjects()
+    if (activeObjects.length < 2) return
+
+    let minLeft = Infinity, maxRight = -Infinity
+    let minTop = Infinity, maxBottom = -Infinity
+
+    activeObjects.forEach((obj: any) => {
+      const bounds = obj.getBoundingRect()
+      minLeft = Math.min(minLeft, bounds.left)
+      maxRight = Math.max(maxRight, bounds.left + bounds.width)
+      minTop = Math.min(minTop, bounds.top)
+      maxBottom = Math.max(maxBottom, bounds.top + bounds.height)
+    })
+
+    activeObjects.forEach((obj: any) => {
+      const bounds = obj.getBoundingRect()
+      
+      switch (alignment) {
+        case 'left':
+          obj.set({ left: obj.left - (bounds.left - minLeft) })
+          break
+        case 'center-h':
+          const centerX = (minLeft + maxRight) / 2
+          obj.set({ left: obj.left + (centerX - (bounds.left + bounds.width / 2)) })
+          break
+        case 'right':
+          obj.set({ left: obj.left + (maxRight - (bounds.left + bounds.width)) })
+          break
+        case 'top':
+          obj.set({ top: obj.top - (bounds.top - minTop) })
+          break
+        case 'center-v':
+          const centerY = (minTop + maxBottom) / 2
+          obj.set({ top: obj.top + (centerY - (bounds.top + bounds.height / 2)) })
+          break
+        case 'bottom':
+          obj.set({ top: obj.top + (maxBottom - (bounds.top + bounds.height)) })
+          break
+      }
+      obj.setCoords()
+    })
+
+    canvas.renderAll()
+    toast.success(`Aligned ${alignment}`)
+  }
+
+  // Distribute objects evenly
+  const distributeObjects = (direction: 'horizontal' | 'vertical') => {
+    if (!canvas) return
+    const activeObjects = canvas.getActiveObjects()
+    if (activeObjects.length < 3) return
+
+    const sorted = [...activeObjects].sort((a, b) => {
+      if (direction === 'horizontal') {
+        return a.left - b.left
+      }
+      return a.top - b.top
+    })
+
+    const first = sorted[0]
+    const last = sorted[sorted.length - 1]
+
+    if (direction === 'horizontal') {
+      const totalWidth = last.left - first.left
+      const spacing = totalWidth / (sorted.length - 1)
+      
+      sorted.forEach((obj, index) => {
+        if (index !== 0 && index !== sorted.length - 1) {
+          obj.set({ left: first.left + spacing * index })
+          obj.setCoords()
+        }
+      })
+    } else {
+      const totalHeight = last.top - first.top
+      const spacing = totalHeight / (sorted.length - 1)
+      
+      sorted.forEach((obj, index) => {
+        if (index !== 0 && index !== sorted.length - 1) {
+          obj.set({ top: first.top + spacing * index })
+          obj.setCoords()
+        }
+      })
+    }
+
+    canvas.renderAll()
+    toast.success(`Distributed ${direction}`)
   }
 
   const applyAIAnalysis = (fabricObjects: any[]) => {
@@ -658,21 +926,21 @@ export default function EditorPage() {
             <button
               onClick={handleUndo}
               className="p-2 rounded text-gray-400 hover:bg-gray-800"
-              title="Undo"
+              title="Undo (Ctrl+Z)"
             >
               <Undo className="h-4 w-4" />
             </button>
             <button
               onClick={handleRedo}
               className="p-2 rounded text-gray-400 hover:bg-gray-800"
-              title="Redo"
+              title="Redo (Ctrl+Y)"
             >
               <Redo className="h-4 w-4" />
             </button>
             <button
               onClick={duplicateSelected}
               className="p-2 rounded text-gray-400 hover:bg-gray-800"
-              title="Duplicate"
+              title="Duplicate (Ctrl+D)"
             >
               <Copy className="h-4 w-4" />
             </button>
@@ -682,6 +950,31 @@ export default function EditorPage() {
               title="Delete"
             >
               <Trash className="h-4 w-4" />
+            </button>
+            
+            <div className="h-6 w-px bg-gray-700 mx-1" />
+            
+            {/* Alignment Tools */}
+            <button
+              onClick={() => alignObjects('left')}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Align Left"
+            >
+              <AlignLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => alignObjects('center-h')}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Align Center"
+            >
+              <AlignCenter className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => alignObjects('right')}
+              className="p-2 rounded text-gray-400 hover:bg-gray-800"
+              title="Align Right"
+            >
+              <AlignRight className="h-4 w-4" />
             </button>
           </div>
         </div>
