@@ -12,7 +12,9 @@ import {
   Undo, Redo, Copy, Trash, Download, Save, Code,
   Move, RotateCw, Maximize2, Minus, Triangle, Star,
   AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline,
-  Layers, Lock, Unlock, Eye, EyeOff, Sparkles
+  Layers, Lock, Unlock, Eye, EyeOff, Sparkles, Plus, X,
+  Monitor, Smartphone, Tablet, Globe, Home, ShoppingCart,
+  User, Settings, Mail, FileText, Layout, Grid
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useParams, useRouter } from 'next/navigation'
@@ -57,6 +59,13 @@ export default function EditorPage() {
   const [activeTab, setActiveTab] = useState<'assistant' | 'import'>('assistant')
   const [saving, setSaving] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
+  
+  // Multi-page functionality
+  const [pages, setPages] = useState<any[]>([])
+  const [currentPageId, setCurrentPageId] = useState<string>('')
+  const [showPageMenu, setShowPageMenu] = useState(false)
+  const [devicePreview, setDevicePreview] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  
   const supabase = createClient()
 
   // Load fabric.js
@@ -70,10 +79,14 @@ export default function EditorPage() {
     loadFabric()
   }, [])
 
-  // Load design data
+  // Load design data and pages
   useEffect(() => {
     if (designId && designId !== 'new') {
       loadDesign()
+      loadPages()
+    } else {
+      // Initialize with default page for new design
+      initializeDefaultPages()
     }
   }, [designId])
 
@@ -91,28 +104,229 @@ export default function EditorPage() {
     }
   }
 
+  const loadPages = async () => {
+    const { data, error } = await supabase
+      .from('design_pages')
+      .select('*')
+      .eq('design_id', designId)
+      .order('order_index')
+
+    if (data && data.length > 0) {
+      setPages(data)
+      setCurrentPageId(data[0].id)
+    } else {
+      // Create default pages if none exist
+      await createDefaultPages()
+    }
+  }
+
+  const initializeDefaultPages = () => {
+    const defaultPages = [
+      { id: 'temp-home', name: 'Home', type: 'page', icon: 'Home', canvas_data: null, order_index: 0 },
+      { id: 'temp-about', name: 'About', type: 'page', icon: 'User', canvas_data: null, order_index: 1 },
+      { id: 'temp-contact', name: 'Contact', type: 'page', icon: 'Mail', canvas_data: null, order_index: 2 }
+    ]
+    setPages(defaultPages)
+    setCurrentPageId('temp-home')
+  }
+
+  const createDefaultPages = async () => {
+    const defaultPages = [
+      { name: 'Home', type: 'page', icon: 'Home', design_id: designId, order_index: 0 },
+      { name: 'About', type: 'page', icon: 'User', design_id: designId, order_index: 1 },
+      { name: 'Contact', type: 'page', icon: 'Mail', design_id: designId, order_index: 2 }
+    ]
+
+    const { data, error } = await supabase
+      .from('design_pages')
+      .insert(defaultPages)
+      .select()
+
+    if (data) {
+      setPages(data)
+      setCurrentPageId(data[0].id)
+    }
+  }
+
   const handleCanvasReady = (fabricCanvas: any) => {
     setCanvas(fabricCanvas)
   }
 
   const handleCanvasSave = async (canvasData: any) => {
-    if (!designId || designId === 'new') return
+    if (!designId || designId === 'new' || !currentPageId) return
 
     setSaving(true)
-    const { error } = await supabase
+    
+    // Save current page canvas data
+    if (currentPageId.startsWith('temp-')) {
+      // For new designs, update temporary page data
+      setPages(prev => prev.map(page => 
+        page.id === currentPageId 
+          ? { ...page, canvas_data: canvasData }
+          : page
+      ))
+    } else {
+      // Save to database for existing pages
+      const { error } = await supabase
+        .from('design_pages')
+        .update({
+          canvas_data: canvasData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentPageId)
+
+      if (error) {
+        toast.error('Failed to save page')
+        setSaving(false)
+        return
+      }
+    }
+
+    // Also update main design record
+    const { error: designError } = await supabase
       .from('designs')
       .update({
-        canvas_data: canvasData,
         updated_at: new Date().toISOString(),
       })
       .eq('id', designId)
 
     setSaving(false)
-    if (error) {
+    if (designError) {
       toast.error('Failed to save design')
     } else {
-      toast.success('Design saved')
+      toast.success('Page saved')
     }
+  }
+
+  // Page Management Functions
+  const switchPage = async (pageId: string) => {
+    // Save current page before switching
+    if (canvas) {
+      await handleCanvasSave(canvas.toJSON())
+    }
+
+    setCurrentPageId(pageId)
+    
+    // Load the new page's canvas data
+    const page = pages.find(p => p.id === pageId)
+    if (page?.canvas_data && canvas) {
+      canvas.loadFromJSON(page.canvas_data, () => {
+        canvas.renderAll()
+      })
+    } else if (canvas) {
+      // Clear canvas for new page
+      canvas.clear()
+      canvas.renderAll()
+    }
+  }
+
+  const addNewPage = async () => {
+    const pageTypes = [
+      { name: 'Blank Page', icon: 'FileText' },
+      { name: 'Landing Page', icon: 'Home' },
+      { name: 'Product Page', icon: 'ShoppingCart' },
+      { name: 'About Page', icon: 'User' },
+      { name: 'Contact Page', icon: 'Mail' },
+      { name: 'Settings Page', icon: 'Settings' },
+      { name: 'Dashboard', icon: 'Layout' },
+      { name: 'Gallery', icon: 'Grid' }
+    ]
+
+    // For now, create a blank page. Later can add a page type selector
+    const newPageName = `Page ${pages.length + 1}`
+    
+    if (designId === 'new' || currentPageId.startsWith('temp-')) {
+      // Add to temporary pages
+      const newPage = {
+        id: `temp-${Date.now()}`,
+        name: newPageName,
+        type: 'page',
+        icon: 'FileText',
+        canvas_data: null,
+        order_index: pages.length
+      }
+      setPages(prev => [...prev, newPage])
+      setCurrentPageId(newPage.id)
+    } else {
+      // Save to database
+      const { data, error } = await supabase
+        .from('design_pages')
+        .insert({
+          name: newPageName,
+          type: 'page',
+          icon: 'FileText',
+          design_id: designId,
+          order_index: pages.length
+        })
+        .select()
+        .single()
+
+      if (data) {
+        setPages(prev => [...prev, data])
+        setCurrentPageId(data.id)
+        if (canvas) {
+          canvas.clear()
+          canvas.renderAll()
+        }
+        toast.success('New page created')
+      } else if (error) {
+        toast.error('Failed to create page')
+      }
+    }
+  }
+
+  const deletePage = async (pageId: string) => {
+    if (pages.length <= 1) {
+      toast.error('Cannot delete the last page')
+      return
+    }
+
+    if (!pageId.startsWith('temp-')) {
+      const { error } = await supabase
+        .from('design_pages')
+        .delete()
+        .eq('id', pageId)
+
+      if (error) {
+        toast.error('Failed to delete page')
+        return
+      }
+    }
+
+    const updatedPages = pages.filter(p => p.id !== pageId)
+    setPages(updatedPages)
+    
+    // Switch to first page if current page was deleted
+    if (currentPageId === pageId && updatedPages.length > 0) {
+      setCurrentPageId(updatedPages[0].id)
+      const firstPage = updatedPages[0]
+      if (firstPage.canvas_data && canvas) {
+        canvas.loadFromJSON(firstPage.canvas_data, () => {
+          canvas.renderAll()
+        })
+      }
+    }
+    
+    toast.success('Page deleted')
+  }
+
+  const renamePage = async (pageId: string, newName: string) => {
+    if (!pageId.startsWith('temp-')) {
+      const { error } = await supabase
+        .from('design_pages')
+        .update({ name: newName })
+        .eq('id', pageId)
+
+      if (error) {
+        toast.error('Failed to rename page')
+        return
+      }
+    }
+
+    setPages(prev => prev.map(page =>
+      page.id === pageId ? { ...page, name: newName } : page
+    ))
+    toast.success('Page renamed')
   }
 
   // Tool functions
@@ -435,6 +649,75 @@ export default function EditorPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Page Switcher */}
+          <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
+            {pages.map((page, index) => {
+              const IconComponent = {
+                Home, User, Mail, FileText, ShoppingCart, Settings, Layout, Grid, Globe
+              }[page.icon] || FileText
+
+              return (
+                <button
+                  key={page.id}
+                  onClick={() => switchPage(page.id)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
+                    currentPageId === page.id
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700'
+                  }`}
+                  title={page.name}
+                >
+                  <IconComponent className="h-3 w-3" />
+                  <span className="hidden sm:inline">{page.name}</span>
+                  {pages.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deletePage(page.id)
+                      }}
+                      className="ml-1 p-0.5 rounded hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-2 w-2" />
+                    </button>
+                  )}
+                </button>
+              )
+            })}
+            
+            <button
+              onClick={addNewPage}
+              className="p-1 rounded text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+              title="Add new page"
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
+          
+          {/* Device Preview */}
+          <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
+            <button
+              onClick={() => setDevicePreview('desktop')}
+              className={`p-1 rounded ${devicePreview === 'desktop' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-gray-300'}`}
+              title="Desktop view"
+            >
+              <Monitor className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => setDevicePreview('tablet')}
+              className={`p-1 rounded ${devicePreview === 'tablet' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-gray-300'}`}
+              title="Tablet view"
+            >
+              <Tablet className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => setDevicePreview('mobile')}
+              className={`p-1 rounded ${devicePreview === 'mobile' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-gray-300'}`}
+              title="Mobile view"
+            >
+              <Smartphone className="h-3 w-3" />
+            </button>
+          </div>
+
           <span className="text-sm text-gray-400">
             {designData?.title || 'Untitled Design'}
           </span>
@@ -492,13 +775,54 @@ export default function EditorPage() {
         )}
 
         {/* Canvas Editor */}
-        <div className="flex-1 relative bg-gray-100">
-          <AdvancedFabricEditor
-            designId={designId}
-            initialData={designData?.canvas_data}
-            onCanvasReady={handleCanvasReady}
-            onSave={handleCanvasSave}
-          />
+        <div className="flex-1 relative bg-gray-100 flex items-center justify-center">
+          {/* Canvas Container with Device Preview */}
+          <div 
+            className={`bg-white shadow-xl transition-all duration-300 ${
+              devicePreview === 'desktop' ? 'w-full h-full' :
+              devicePreview === 'tablet' ? 'w-[768px] h-[1024px] rounded-lg' :
+              'w-[375px] h-[667px] rounded-lg'
+            }`}
+            style={{
+              maxWidth: devicePreview === 'desktop' ? '100%' : undefined,
+              maxHeight: devicePreview === 'desktop' ? '100%' : 'calc(100vh - 120px)'
+            }}
+          >
+            {/* Page Title Bar */}
+            <div className="flex items-center justify-between p-2 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const currentPage = pages.find(p => p.id === currentPageId)
+                  const IconComponent = currentPage ? {
+                    Home, User, Mail, FileText, ShoppingCart, Settings, Layout, Grid, Globe
+                  }[currentPage.icon] || FileText : FileText
+                  
+                  return (
+                    <>
+                      <IconComponent className="h-4 w-4 text-gray-600" />
+                      <span className="text-sm font-medium text-gray-700">
+                        {currentPage?.name || 'Untitled Page'}
+                      </span>
+                    </>
+                  )
+                })()}
+              </div>
+              <div className="flex items-center gap-1">
+                <div className={`w-2 h-2 rounded-full ${devicePreview === 'desktop' ? 'bg-green-500' : devicePreview === 'tablet' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
+                <span className="text-xs text-gray-500 capitalize">{devicePreview}</span>
+              </div>
+            </div>
+            
+            {/* Canvas Area */}
+            <div className="relative w-full h-full overflow-hidden">
+              <AdvancedFabricEditor
+                designId={`${designId}-${currentPageId}`}
+                initialData={pages.find(p => p.id === currentPageId)?.canvas_data || designData?.canvas_data}
+                onCanvasReady={handleCanvasReady}
+                onSave={handleCanvasSave}
+              />
+            </div>
+          </div>
           
           {/* Image Upload Input (Hidden) */}
           <input
