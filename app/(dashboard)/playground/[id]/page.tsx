@@ -15,6 +15,30 @@ import {
   Key,
   Code2,
   MessageSquare,
+  Save,
+  Play,
+  Settings,
+  FolderOpen,
+  FileCode2,
+  Layout,
+  Sparkles,
+  ExternalLink,
+  Check,
+  X,
+  Eye,
+  EyeOff,
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+  Download,
+  Upload,
+  Share2,
+  Zap,
+  Terminal,
+  Package,
+  GitBranch,
+  HelpCircle,
+  MoreVertical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import AIPlayground from '@/components/playground/AIPlayground'
@@ -24,11 +48,29 @@ import DeploymentStatus from '@/components/playground/DeploymentStatus'
 // Dynamically import Monaco Editor to avoid SSR issues
 const CodeEditor = dynamic(() => import('@/components/playground/CodeEditor'), {
   ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center bg-gray-950">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500 mx-auto mb-2" />
+        <p className="text-gray-400 text-sm">Loading editor...</p>
+      </div>
+    </div>
+  )
 })
 
 const PreviewFrame = dynamic(
   () => import('@/components/playground/PreviewFrame'),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center bg-white">
+        <div className="text-center">
+          <Layout className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-gray-500 text-sm">Loading preview...</p>
+        </div>
+      </div>
+    )
+  }
 )
 
 interface Playground {
@@ -54,20 +96,29 @@ export default function PlaygroundEditorPage() {
   const params = useParams()
   const router = useRouter()
   const supabase = createClient()
+  
+  // Core state
   const [playground, setPlayground] = useState<Playground | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [code, setCode] = useState<any>({})
   const [selectedFile, setSelectedFile] = useState('app/page.tsx')
-  const [previewDevice, setPreviewDevice] = useState<
-    'desktop' | 'tablet' | 'mobile'
-  >('desktop')
+  
+  // UI state
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   const [showChat, setShowChat] = useState(true)
   const [showIntegrations, setShowIntegrations] = useState(false)
   const [showDeployment, setShowDeployment] = useState(false)
+  const [showFileExplorer, setShowFileExplorer] = useState(true)
+  const [fullscreenPreview, setFullscreenPreview] = useState(false)
+  const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark')
+  
+  // Integration state
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [promptHistory, setPromptHistory] = useState<any[]>([])
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  
   const autoSaveTimeout = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
@@ -108,17 +159,25 @@ export default function PlaygroundEditorPage() {
         data.current_code || {
           'app/page.tsx': `export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl font-bold">Welcome to your app!</h1>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+      <div className="container mx-auto px-4 py-20">
+        <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          Welcome to DesignShip
+        </h1>
+        <p className="text-xl text-center text-gray-600">
+          Start building your app with AI assistance
+        </p>
+      </div>
     </div>
   )
 }`,
           'package.json': `{
-  "name": "my-app",
+  "name": "designship-app",
   "version": "1.0.0",
   "dependencies": {
     "react": "^18.2.0",
-    "next": "^14.0.0"
+    "next": "^14.0.0",
+    "tailwindcss": "^3.4.0"
   }
 }`,
         }
@@ -162,6 +221,7 @@ export default function PlaygroundEditorPage() {
         .eq('id', playground.id)
 
       if (error) throw error
+      setLastSaved(new Date())
     } catch (error) {
       console.error('Failed to save playground:', error)
       toast.error('Failed to save changes')
@@ -268,178 +328,386 @@ export default function PlaygroundEditorPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      <div className="flex h-screen items-center justify-center bg-gray-950">
+        <div className="text-center">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full blur-xl opacity-50 animate-pulse" />
+            <Code2 className="relative h-16 w-16 text-white mb-4" />
+          </div>
+          <h2 className="text-xl font-semibold text-white mb-2">Loading Playground</h2>
+          <p className="text-gray-400">Setting up your development environment...</p>
+        </div>
       </div>
     )
   }
 
   if (!playground) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Playground not found</p>
+      <div className="flex h-screen items-center justify-center bg-gray-950">
+        <div className="text-center">
+          <X className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">Playground Not Found</h2>
+          <p className="text-gray-400 mb-4">The requested playground does not exist</p>
+          <button
+            onClick={() => router.push('/playground')}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Back to Playgrounds
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-900">
-      {/* Header */}
-      <header className="flex h-14 items-center justify-between border-b border-gray-800 bg-gray-900 px-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push('/playground')}
-            className="flex items-center gap-2 text-gray-400 hover:text-white"
-          >
-            <ChevronLeft className="h-5 w-5" />
-            Back
-          </button>
-          <div className="flex items-center gap-2">
-            <Code2 className="h-5 w-5 text-purple-500" />
-            <input
-              type="text"
-              value={playground.name}
-              onChange={(e) =>
-                setPlayground({ ...playground, name: e.target.value })
-              }
-              className="bg-transparent text-white outline-none"
-              onBlur={savePlayground}
-            />
-          </div>
-          {saving && (
-            <div className="flex items-center gap-2 text-gray-400">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Saving...</span>
+    <div className="flex h-screen flex-col bg-gray-950">
+      {/* Professional Header Bar */}
+      <header className="h-14 border-b border-gray-800 bg-gray-900/50 backdrop-blur-xl">
+        <div className="flex h-full items-center justify-between px-4">
+          {/* Left Section */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/playground')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="text-sm font-medium">Back</span>
+            </button>
+            
+            <div className="h-6 w-px bg-gray-700" />
+            
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg blur opacity-50" />
+                <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-1.5">
+                  <Code2 className="h-4 w-4 text-white" />
+                </div>
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={playground.name}
+                  onChange={(e) => setPlayground({ ...playground, name: e.target.value })}
+                  className="bg-transparent text-white font-semibold outline-none text-sm"
+                  onBlur={savePlayground}
+                />
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span>{playground.framework}</span>
+                  <span>•</span>
+                  <span>{playground.language}</span>
+                  {lastSaved && (
+                    <>
+                      <span>•</span>
+                      <span>Saved {lastSaved.toLocaleTimeString()}</span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Device Preview Toggles */}
-          <div className="flex items-center rounded-lg bg-gray-800 p-1">
-            <button
-              onClick={() => setPreviewDevice('desktop')}
-              className={`rounded p-1.5 ${
-                previewDevice === 'desktop'
-                  ? 'bg-gray-700 text-white'
-                  : 'text-gray-400'
-              }`}
-            >
-              <Monitor className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setPreviewDevice('tablet')}
-              className={`rounded p-1.5 ${
-                previewDevice === 'tablet'
-                  ? 'bg-gray-700 text-white'
-                  : 'text-gray-400'
-              }`}
-            >
-              <Tablet className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setPreviewDevice('mobile')}
-              className={`rounded p-1.5 ${
-                previewDevice === 'mobile'
-                  ? 'bg-gray-700 text-white'
-                  : 'text-gray-400'
-              }`}
-            >
-              <Smartphone className="h-4 w-4" />
-            </button>
+            
+            {saving && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg">
+                <Loader2 className="h-3 w-3 animate-spin text-purple-500" />
+                <span className="text-xs text-gray-400">Saving...</span>
+              </div>
+            )}
           </div>
 
-          {/* Action Buttons */}
-          <button
-            onClick={deployToGitHub}
-            className="flex items-center gap-2 rounded-lg bg-gray-800 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700"
-          >
-            <Github className="h-4 w-4" />
-            Push to GitHub
-          </button>
-          <button
-            onClick={deployToVercel}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 px-3 py-1.5 text-sm text-white hover:from-violet-700 hover:to-purple-700"
-          >
-            <Cloud className="h-4 w-4" />
-            Deploy
-          </button>
-          <button
-            onClick={() => setShowIntegrations(!showIntegrations)}
-            className={`rounded-lg p-1.5 ${
-              showIntegrations
-                ? 'bg-gray-700 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <Key className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => setShowChat(!showChat)}
-            className={`rounded-lg p-1.5 ${
-              showChat
-                ? 'bg-gray-700 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <MessageSquare className="h-5 w-5" />
-          </button>
+          {/* Center Section - Device Preview */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-gray-800 rounded-lg p-1">
+              <button
+                onClick={() => setPreviewDevice('desktop')}
+                className={`px-3 py-1.5 rounded-md transition-all ${
+                  previewDevice === 'desktop'
+                    ? 'bg-gray-700 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Desktop Preview"
+              >
+                <Monitor className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setPreviewDevice('tablet')}
+                className={`px-3 py-1.5 rounded-md transition-all ${
+                  previewDevice === 'tablet'
+                    ? 'bg-gray-700 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Tablet Preview"
+              >
+                <Tablet className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setPreviewDevice('mobile')}
+                className={`px-3 py-1.5 rounded-md transition-all ${
+                  previewDevice === 'mobile'
+                    ? 'bg-gray-700 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Mobile Preview"
+              >
+                <Smartphone className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Right Section - Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => savePlayground()}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-all"
+              title="Save (Ctrl+S)"
+            >
+              <Save className="h-4 w-4" />
+              <span className="text-sm">Save</span>
+            </button>
+            
+            <button
+              onClick={deployToGitHub}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-all"
+              title="Push to GitHub"
+            >
+              <Github className="h-4 w-4" />
+              <span className="text-sm">Push</span>
+            </button>
+            
+            <button
+              onClick={deployToVercel}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg shadow-purple-500/25"
+              title="Deploy to Production"
+            >
+              <Zap className="h-4 w-4" />
+              <span className="text-sm font-medium">Deploy</span>
+            </button>
+            
+            <div className="h-6 w-px bg-gray-700 mx-2" />
+            
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowIntegrations(!showIntegrations)}
+                className={`p-2 rounded-lg transition-all ${
+                  showIntegrations
+                    ? 'bg-gray-700 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                title="Integrations"
+              >
+                <Key className="h-4 w-4" />
+              </button>
+              
+              <button
+                onClick={() => setShowChat(!showChat)}
+                className={`p-2 rounded-lg transition-all ${
+                  showChat
+                    ? 'bg-gray-700 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                title="AI Assistant"
+              >
+                <Sparkles className="h-4 w-4" />
+              </button>
+              
+              <button
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                title="Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content Area with Professional Layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* AI Chat Panel */}
+        {/* AI Assistant Panel */}
         {showChat && (
-          <div className="w-96 border-r border-gray-800">
-            <AIPlayground
-              onPromptSubmit={handlePromptSubmit}
-              isGenerating={isGenerating}
-              promptHistory={promptHistory}
-              integrations={integrations}
-            />
-          </div>
+          <aside className="w-80 border-r border-gray-800 bg-gray-900/50 flex flex-col">
+            <div className="p-4 border-b border-gray-800">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-purple-500" />
+                  AI Assistant
+                </h3>
+                <button
+                  onClick={() => setShowChat(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">
+                Ask me to help you build your app
+              </p>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <AIPlayground
+                onPromptSubmit={handlePromptSubmit}
+                isGenerating={isGenerating}
+                promptHistory={promptHistory}
+                integrations={integrations}
+              />
+            </div>
+          </aside>
         )}
 
-        {/* Code Editor */}
-        <div className="flex flex-1 flex-col">
-          <CodeEditor
-            files={code}
-            selectedFile={selectedFile}
-            onFileSelect={setSelectedFile}
-            onCodeChange={(file, newCode) => {
-              setCode({ ...code, [file]: newCode })
-            }}
-          />
+        {/* Code Editor Section */}
+        <div className="flex-1 flex flex-col bg-gray-950">
+          {/* File Tabs */}
+          <div className="h-10 bg-gray-900 border-b border-gray-800 flex items-center px-2 gap-1 overflow-x-auto">
+            {Object.keys(code).map((fileName) => (
+              <button
+                key={fileName}
+                onClick={() => setSelectedFile(fileName)}
+                className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-2 ${
+                  selectedFile === fileName
+                    ? 'bg-gray-800 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                }`}
+              >
+                <FileCode2 className="h-3 w-3" />
+                {fileName}
+              </button>
+            ))}
+            <button
+              className="px-2 py-1 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all"
+              title="Add file"
+            >
+              <span className="text-sm">+</span>
+            </button>
+          </div>
+          
+          {/* Editor */}
+          <div className="flex-1 overflow-hidden">
+            <CodeEditor
+              files={code}
+              selectedFile={selectedFile}
+              onFileSelect={setSelectedFile}
+              onCodeChange={(file, newCode) => {
+                setCode({ ...code, [file]: newCode })
+              }}
+            />
+          </div>
         </div>
 
-        {/* Preview */}
-        <div className="flex flex-1 flex-col border-l border-gray-800 bg-white">
-          <PreviewFrame
-            code={code}
-            device={previewDevice}
-            playgroundId={playground.id}
-          />
+        {/* Preview Panel */}
+        <div className={`${fullscreenPreview ? 'fixed inset-0 z-50' : 'flex-1'} flex flex-col bg-white`}>
+          {/* Preview Header */}
+          <div className="h-10 bg-gray-100 border-b border-gray-200 flex items-center justify-between px-3">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+              </div>
+              <span className="text-xs text-gray-600 ml-2">
+                Preview • {previewDevice}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                className="p-1 rounded hover:bg-gray-200 text-gray-600"
+                title="Refresh"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setFullscreenPreview(!fullscreenPreview)}
+                className="p-1 rounded hover:bg-gray-200 text-gray-600"
+                title={fullscreenPreview ? 'Exit fullscreen' : 'Fullscreen'}
+              >
+                {fullscreenPreview ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="h-3.5 w-3.5" />
+                )}
+              </button>
+              <button
+                className="p-1 rounded hover:bg-gray-200 text-gray-600"
+                title="Open in new tab"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Preview Content */}
+          <div className="flex-1 overflow-auto bg-gray-50">
+            <PreviewFrame
+              code={code}
+              device={previewDevice}
+              playgroundId={playground.id}
+            />
+          </div>
         </div>
 
         {/* Integrations Panel */}
         {showIntegrations && (
-          <div className="w-80 border-l border-gray-800">
+          <aside className="w-80 border-l border-gray-800 bg-gray-900/50">
+            <div className="p-4 border-b border-gray-800">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Key className="h-4 w-4 text-blue-500" />
+                  Integrations
+                </h3>
+                <button
+                  onClick={() => setShowIntegrations(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
             <IntegrationsPanel
               playgroundId={playground.id}
               integrations={integrations}
               onIntegrationsChange={loadIntegrations}
             />
-          </div>
-        )}
-
-        {/* Deployment Status */}
-        {showDeployment && (
-          <div className="absolute bottom-4 right-4">
-            <DeploymentStatus playgroundId={playground.id} />
-          </div>
+          </aside>
         )}
       </div>
+
+      {/* Deployment Status Popup */}
+      {showDeployment && (
+        <div className="fixed bottom-4 right-4 z-40">
+          <DeploymentStatus playgroundId={playground.id} />
+        </div>
+      )}
+
+      {/* Status Bar */}
+      <footer className="h-6 bg-gray-900 border-t border-gray-800 flex items-center justify-between px-4 text-xs">
+        <div className="flex items-center gap-4 text-gray-400">
+          <span className="flex items-center gap-1">
+            <Package className="h-3 w-3" />
+            {playground.framework}
+          </span>
+          <span className="flex items-center gap-1">
+            <FileCode2 className="h-3 w-3" />
+            {Object.keys(code).length} files
+          </span>
+          <span className="flex items-center gap-1">
+            <GitBranch className="h-3 w-3" />
+            main
+          </span>
+        </div>
+        <div className="flex items-center gap-4 text-gray-400">
+          {saving ? (
+            <span className="flex items-center gap-1 text-yellow-500">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Saving...
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-green-500">
+              <Check className="h-3 w-3" />
+              All changes saved
+            </span>
+          )}
+          <button className="hover:text-white">
+            <HelpCircle className="h-3 w-3" />
+          </button>
+        </div>
+      </footer>
     </div>
   )
 }
