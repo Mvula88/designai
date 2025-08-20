@@ -16,6 +16,7 @@
   "devDependencies": {
     "@hookform/resolvers": "^5.2.1",
     "@types/fabric": "^5.3.10",
+    "@types/jszip": "^3.4.0",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
@@ -50,6 +51,7 @@
     "clsx": "^2.1.1",
     "fabric": "^6.7.1",
     "framer-motion": "^12.23.12",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.539.0",
     "nanoid": "^5.1.5",
     "next": "^15.4.6",

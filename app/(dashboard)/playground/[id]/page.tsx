@@ -35,7 +35,9 @@ import {
   CreditCard,
   Activity,
   Plus,
-  Globe
+  Globe,
+  FileArchive,
+  Upload
 } from 'lucide-react'
 import { toast } from 'sonner'
 import AIPlayground from '@/components/playground/AIPlayground'
@@ -44,6 +46,7 @@ import DeploymentStatus from '@/components/playground/DeploymentStatus'
 import LiveEditOverlay from '@/components/playground/LiveEditOverlay'
 import PricingPlans from '@/components/playground/PricingPlans'
 import StripeConnect from '@/components/playground/StripeConnect'
+import ZipUpload from '@/components/playground/ZipUpload'
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const CodeEditor = dynamic(() => import('@/components/playground/CodeEditor'), {
@@ -106,6 +109,7 @@ export default function PlaygroundEditorPage() {
   const [selectedElement, setSelectedElement] = useState<any>(null)
   const [showPricing, setShowPricing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [showZipUpload, setShowZipUpload] = useState(false)
   
   // Integration state
   const [integrations, setIntegrations] = useState<Integration[]>([])
@@ -265,6 +269,22 @@ export default function PlaygroundEditorPage() {
       setCode(updatedCode)
       toast.success('Element updated')
     }
+  }
+
+  const handleZipFilesExtracted = (extractedFiles: Record<string, string>) => {
+    // Merge extracted files with existing code
+    const updatedCode = { ...code, ...extractedFiles }
+    setCode(updatedCode)
+    
+    // Select the first file if available
+    const firstFile = Object.keys(extractedFiles)[0]
+    if (firstFile) {
+      setSelectedFile(firstFile)
+    }
+    
+    // Save the playground with new files
+    savePlayground()
+    toast.success('Files imported successfully')
   }
 
   const deployToGitHub = async () => {
@@ -487,6 +507,17 @@ export default function PlaygroundEditorPage() {
                 title="Integrations"
               >
                 <Key className="h-4 w-4" />
+              </button>
+
+              <div className="h-6 w-px bg-gray-700" />
+
+              {/* Import/Export Actions */}
+              <button
+                onClick={() => setShowZipUpload(true)}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                title="Import from ZIP"
+              >
+                <FileArchive className="h-4 w-4" />
               </button>
 
               <div className="h-6 w-px bg-gray-700" />
@@ -739,6 +770,14 @@ export default function PlaygroundEditorPage() {
         <PricingPlans
           onClose={() => setShowPricing(false)}
           playgroundId={playground.id}
+        />
+      )}
+
+      {/* ZIP Upload Modal */}
+      {showZipUpload && (
+        <ZipUpload
+          onFilesExtracted={handleZipFilesExtracted}
+          onClose={() => setShowZipUpload(false)}
         />
       )}
     </div>
