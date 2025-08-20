@@ -37,7 +37,9 @@ import {
   Plus,
   Globe,
   FileArchive,
-  Upload
+  Upload,
+  ChevronDown,
+  FileText
 } from 'lucide-react'
 import { toast } from 'sonner'
 import AIPlayground from '@/components/playground/AIPlayground'
@@ -110,6 +112,7 @@ export default function PlaygroundEditorPage() {
   const [showPricing, setShowPricing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [showZipUpload, setShowZipUpload] = useState(false)
+  const [showFileDropdown, setShowFileDropdown] = useState(false)
   
   // Integration state
   const [integrations, setIntegrations] = useState<Integration[]>([])
@@ -679,22 +682,83 @@ export default function PlaygroundEditorPage() {
           )}
 
           {/* Code Editor */}
-          <div className="flex-1 flex flex-col bg-gray-950">
-            <div className="h-10 bg-gray-900 border-b border-gray-800 flex items-center px-2 gap-1 overflow-x-auto">
-              {Object.keys(code).map((fileName) => (
-                <button
-                  key={fileName}
-                  onClick={() => setSelectedFile(fileName)}
-                  className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-2 ${
-                    selectedFile === fileName
-                      ? 'bg-gray-800 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                  }`}
-                >
-                  <FileCode2 className="h-3 w-3" />
-                  {fileName}
-                </button>
-              ))}
+          <div className="flex-1 flex flex-col bg-gray-950 min-w-0 max-w-[50%]">
+            <div className="h-10 bg-gray-900 border-b border-gray-800 flex items-center px-2">
+              {/* Show first few tabs */}
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                {Object.keys(code).slice(0, 3).map((fileName) => {
+                  const displayName = fileName.includes('/') 
+                    ? fileName.split('/').pop() || fileName
+                    : fileName
+                  
+                  return (
+                    <button
+                      key={fileName}
+                      onClick={() => setSelectedFile(fileName)}
+                      title={fileName}
+                      className={`shrink-0 px-2.5 py-1 text-xs rounded-md transition-all flex items-center gap-1.5 max-w-[150px] ${
+                        selectedFile === fileName
+                          ? 'bg-gray-800 text-white'
+                          : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                      }`}
+                    >
+                      <FileCode2 className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{displayName}</span>
+                      {selectedFile === fileName && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            // Could add close file functionality here
+                          }}
+                          className="ml-1 hover:text-red-400"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      )}
+                    </button>
+                  )
+                })}
+                
+                {/* Dropdown for remaining files */}
+                {Object.keys(code).length > 3 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowFileDropdown(!showFileDropdown)}
+                      className="px-2.5 py-1 text-xs rounded-md text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all flex items-center gap-1"
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                      <span>{Object.keys(code).length - 3} more files</span>
+                    </button>
+                    
+                    {showFileDropdown && (
+                      <div className="absolute top-full left-0 mt-1 w-64 max-h-80 overflow-y-auto bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-20">
+                        {Object.keys(code).slice(3).map((fileName) => (
+                          <button
+                            key={fileName}
+                            onClick={() => {
+                              setSelectedFile(fileName)
+                              setShowFileDropdown(false)
+                            }}
+                            className="w-full px-3 py-2 text-xs text-left text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center gap-2"
+                          >
+                            <FileCode2 className="h-3 w-3" />
+                            <span className="truncate">{fileName}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Current file indicator */}
+              <div className="shrink-0 px-2 text-xs text-gray-500">
+                {selectedFile && (
+                  <span className="truncate max-w-[200px]" title={selectedFile}>
+                    {selectedFile}
+                  </span>
+                )}
+              </div>
             </div>
             
             <div className="flex-1">
@@ -710,7 +774,7 @@ export default function PlaygroundEditorPage() {
           </div>
 
           {/* Preview Panel */}
-          <div className={`${fullscreenPreview ? 'fixed inset-0 z-50' : 'flex-1'} flex flex-col bg-white`}>
+          <div className={`${fullscreenPreview ? 'fixed inset-0 z-50' : 'flex-1 min-w-0'} flex flex-col bg-white`}>
             <div className="h-10 bg-gray-100 border-b border-gray-200 flex items-center justify-between px-3">
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
