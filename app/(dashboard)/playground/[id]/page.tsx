@@ -271,10 +271,15 @@ export default function PlaygroundEditorPage() {
     }
   }
 
-  const handleZipFilesExtracted = (extractedFiles: Record<string, string>) => {
+  const handleZipFilesExtracted = async (extractedFiles: Record<string, string>) => {
     // Merge extracted files with existing code
     const updatedCode = { ...code, ...extractedFiles }
+    
+    // Update state immediately
     setCode(updatedCode)
+    
+    // Open files panel to show imported files
+    setActivePanel('files')
     
     // Select the first file if available
     const firstFile = Object.keys(extractedFiles)[0]
@@ -282,9 +287,29 @@ export default function PlaygroundEditorPage() {
       setSelectedFile(firstFile)
     }
     
-    // Save the playground with new files
-    savePlayground()
-    toast.success('Files imported successfully')
+    // Save the updated code to the database
+    try {
+      const { error } = await supabase
+        .from('playgrounds')
+        .update({
+          current_code: updatedCode,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', playground?.id)
+
+      if (error) throw error
+      
+      setLastSaved(new Date())
+      toast.success(`Imported ${Object.keys(extractedFiles).length} files successfully`)
+      
+      // Force a refresh of the playground data
+      setTimeout(() => {
+        loadPlayground()
+      }, 500)
+    } catch (error) {
+      console.error('Failed to save imported files:', error)
+      toast.error('Failed to save imported files')
+    }
   }
 
   const deployToGitHub = async () => {

@@ -176,8 +176,10 @@ export default function ZipUpload({ onFilesExtracted, onClose }: ZipUploadProps)
       }
     })
 
+    console.log('Importing files:', Object.keys(filesToImport))
+    console.log('Files to import:', filesToImport)
+    
     onFilesExtracted(filesToImport)
-    toast.success(`Imported ${selectedFiles.size} files`)
     onClose()
   }
 
