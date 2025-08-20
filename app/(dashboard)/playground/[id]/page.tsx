@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import {
+  ChevronLeft,
   Smartphone,
   Tablet,
   Monitor,
@@ -32,7 +33,6 @@ import {
   Edit3,
   Crown,
   CreditCard,
-  ChevronRight,
   Activity,
   Plus,
   Globe
