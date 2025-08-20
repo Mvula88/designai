@@ -20,9 +20,23 @@ import {
   Database,
   GitBranch,
   Cloud,
+  Crown,
+  Lock,
+  Zap,
+  Shield,
+  Award,
+  Filter,
+  Grid,
+  List,
+  ChevronRight,
+  ArrowUpRight,
+  Infinity,
+  Users,
+  Activity
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import PricingPlans from '@/components/playground/PricingPlans'
 
 interface Playground {
   id: string
@@ -59,13 +73,57 @@ export default function PlaygroundPage() {
     'all' | 'recent' | 'popular' | 'templates'
   >('all')
   const [creatingPlayground, setCreatingPlayground] = useState(false)
+  const [showPricing, setShowPricing] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'enterprise'>('free')
+  const [stats, setStats] = useState({ total: 0, deployed: 0, shared: 0 })
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     loadPlaygrounds()
     loadTemplates()
+    loadUserPlan()
+    loadStats()
   }, [filter])
+
+  const loadUserPlan = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await supabase
+        .from('user_subscriptions')
+        .select('status')
+        .eq('user_id', user.id)
+        .single()
+
+      if (data?.status === 'active') {
+        setUserPlan('pro')
+      }
+    } catch (error) {
+      console.error('Failed to load user plan:', error)
+    }
+  }
+
+  const loadStats = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, count } = await supabase
+        .from('playgrounds')
+        .select('*', { count: 'exact' })
+        .eq('user_id', user.id)
+
+      const deployed = data?.filter(p => p.deployment_url).length || 0
+      const shared = data?.filter(p => p.is_public).length || 0
+
+      setStats({ total: count || 0, deployed, shared })
+    } catch (error) {
+      console.error('Failed to load stats:', error)
+    }
+  }
 
   const loadPlaygrounds = async () => {
     setLoading(true)
@@ -196,104 +254,155 @@ export default function PlaygroundPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-lg">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-950">
+      {/* Professional Header */}
+      <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-xl">
+        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 p-2">
-                  <Code2 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    AI Playground
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    Build full-stack apps with AI in seconds
-                  </p>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl blur opacity-50" />
+                <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-2.5">
+                  <Code2 className="h-7 w-7 text-white" />
                 </div>
               </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-white">
+                    AI Playground
+                  </h1>
+                  {userPlan !== 'free' && (
+                    <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-600 to-orange-600 text-xs font-semibold text-white">
+                      {userPlan.toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-400">
+                  Build, deploy, and scale AI-powered applications
+                </p>
+              </div>
             </div>
-            <button
-              onClick={() => createNewPlayground()}
-              disabled={creatingPlayground}
-              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-2 text-white shadow-lg hover:from-violet-700 hover:to-purple-700 disabled:opacity-50"
-            >
-              {creatingPlayground ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-5 w-5" />
-                  New Playground
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowPricing(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 transition-all"
+              >
+                <Crown className="h-4 w-4" />
+                Upgrade
+              </button>
+              <button
+                onClick={() => createNewPlayground()}
+                disabled={creatingPlayground || (userPlan === 'free' && stats.total >= 3)}
+                className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-2.5 text-white shadow-lg shadow-purple-600/25 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 transition-all"
+              >
+                {creatingPlayground ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Creating...
+                  </>
+                ) : userPlan === 'free' && stats.total >= 3 ? (
+                  <>
+                    <Lock className="h-4 w-4" />
+                    Upgrade to Create More
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    New Playground
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <div className="border-b bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-12 text-white">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-8 lg:grid-cols-2">
-            <div>
-              <h2 className="mb-4 text-4xl font-bold">
-                From idea to deployed app in 60 seconds
-              </h2>
-              <p className="mb-6 text-lg opacity-90">
-                Describe your app, and watch as AI builds it with a real
-                backend, auth, and database. Deploy instantly to Vercel or
-                Netlify.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  <span>Auto-provision Supabase</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Github className="h-5 w-5" />
-                  <span>GitHub integration</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Rocket className="h-5 w-5" />
-                  <span>One-click deploy</span>
-                </div>
+      {/* Stats Bar */}
+      <div className="border-b border-gray-800 bg-gray-900/30">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-4 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-600/20 rounded-lg">
+                <Layers className="h-5 w-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">{stats.total}</p>
+                <p className="text-xs text-gray-400">Total Projects</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-lg bg-white/10 p-4 backdrop-blur">
-                <Sparkles className="mb-2 h-8 w-8" />
-                <h3 className="mb-1 font-semibold">AI-Powered</h3>
-                <p className="text-sm opacity-90">
-                  Claude generates complete, production-ready code
-                </p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-600/20 rounded-lg">
+                <Rocket className="h-5 w-5 text-green-400" />
               </div>
-              <div className="rounded-lg bg-white/10 p-4 backdrop-blur">
-                <Layers className="mb-2 h-8 w-8" />
-                <h3 className="mb-1 font-semibold">Full-Stack</h3>
-                <p className="text-sm opacity-90">
-                  Frontend, backend, database, and auth included
-                </p>
+              <div>
+                <p className="text-2xl font-bold text-white">{stats.deployed}</p>
+                <p className="text-xs text-gray-400">Deployed</p>
               </div>
-              <div className="rounded-lg bg-white/10 p-4 backdrop-blur">
-                <GitBranch className="mb-2 h-8 w-8" />
-                <h3 className="mb-1 font-semibold">Version Control</h3>
-                <p className="text-sm opacity-90">
-                  Automatic Git commits and branching
-                </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-600/20 rounded-lg">
+                <Users className="h-5 w-5 text-blue-400" />
               </div>
-              <div className="rounded-lg bg-white/10 p-4 backdrop-blur">
-                <Cloud className="mb-2 h-8 w-8" />
-                <h3 className="mb-1 font-semibold">Instant Deploy</h3>
-                <p className="text-sm opacity-90">
-                  Deploy to production with one click
-                </p>
+              <div>
+                <p className="text-2xl font-bold text-white">{stats.shared}</p>
+                <p className="text-xs text-gray-400">Shared</p>
               </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-600/20 rounded-lg">
+                <Activity className="h-5 w-5 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">
+                  {userPlan === 'free' ? `${3 - stats.total}/3` : <Infinity className="h-5 w-5" />}
+                </p>
+                <p className="text-xs text-gray-400">Remaining</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <div className="border-b border-gray-800 bg-gradient-to-br from-purple-900/20 via-gray-900 to-blue-900/20 px-4 py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-600/20 border border-purple-600/30 mb-4">
+              <Sparkles className="h-4 w-4 text-purple-400" />
+              <span className="text-sm text-purple-300">Powered by Claude 3.5 Sonnet</span>
+            </div>
+            <h2 className="text-5xl font-bold text-white mb-4">
+              Ship production apps in <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">60 seconds</span>
+            </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              Describe your idea, and watch AI build a complete full-stack application with backend, database, and authentication.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="group relative overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 p-6 hover:border-purple-600/50 transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Database className="h-10 w-10 text-purple-400 mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Auto Database</h3>
+              <p className="text-sm text-gray-400">Supabase provisioned automatically with auth & storage</p>
+            </div>
+            <div className="group relative overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 p-6 hover:border-blue-600/50 transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <GitBranch className="h-10 w-10 text-blue-400 mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Git Integration</h3>
+              <p className="text-sm text-gray-400">Push to GitHub with automatic commits and branching</p>
+            </div>
+            <div className="group relative overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 p-6 hover:border-green-600/50 transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Zap className="h-10 w-10 text-green-400 mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Live Editing</h3>
+              <p className="text-sm text-gray-400">Edit your app visually in real-time with instant preview</p>
+            </div>
+            <div className="group relative overflow-hidden rounded-xl bg-gray-900/50 border border-gray-800 p-6 hover:border-amber-600/50 transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Cloud className="h-10 w-10 text-amber-400 mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Deploy Anywhere</h3>
+              <p className="text-sm text-gray-400">One-click deploy to Vercel, Netlify, or your own server</p>
             </div>
           </div>
         </div>
@@ -352,27 +461,66 @@ export default function PlaygroundPage() {
         )}
 
         {/* Controls */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
               <input
                 type="text"
                 placeholder="Search playgrounds..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 rounded-lg border border-gray-300 py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-80 rounded-lg bg-gray-900 border border-gray-700 py-2.5 pl-10 pr-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-purple-600 transition-colors"
               />
             </div>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as any)}
-              className="rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            <div className="flex items-center bg-gray-900 rounded-lg border border-gray-700 p-1">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  filter === 'all' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilter('recent')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  filter === 'recent' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Recent
+              </button>
+              <button
+                onClick={() => setFilter('popular')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  filter === 'popular' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Popular
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+              }`}
             >
-              <option value="all">All Projects</option>
-              <option value="recent">Recent</option>
-              <option value="popular">Popular</option>
-            </select>
+              <Grid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg transition-all ${
+                viewMode === 'list'
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <List className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
@@ -399,37 +547,43 @@ export default function PlaygroundPage() {
               Create Playground
             </button>
           </div>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredPlaygrounds.map((playground) => (
               <Link
                 key={playground.id}
                 href={`/playground/${playground.id}`}
-                className="group relative overflow-hidden rounded-lg border bg-white shadow-sm transition-all hover:shadow-lg"
+                className="group relative overflow-hidden rounded-xl bg-gray-900 border border-gray-800 transition-all hover:border-purple-600/50 hover:shadow-lg hover:shadow-purple-600/10"
               >
-                <div className="p-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative p-6">
                   <div className="mb-4 flex items-start justify-between">
-                    <div className="rounded-lg bg-gradient-to-br from-violet-100 to-purple-100 p-2">
-                      <Code2 className="h-6 w-6 text-violet-600" />
+                    <div className="rounded-lg bg-gradient-to-br from-purple-600/20 to-blue-600/20 p-2.5">
+                      <Code2 className="h-6 w-6 text-purple-400" />
                     </div>
-                    {playground.is_public && (
-                      <Globe className="h-5 w-5 text-gray-400" />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {playground.is_public && (
+                        <Globe className="h-4 w-4 text-green-400" />
+                      )}
+                      {playground.deployment_url && (
+                        <Cloud className="h-4 w-4 text-blue-400" />
+                      )}
+                    </div>
                   </div>
-                  <h3 className="mb-2 font-semibold text-gray-900">
+                  <h3 className="mb-2 font-semibold text-white group-hover:text-purple-300 transition-colors">
                     {playground.name}
                   </h3>
-                  <p className="mb-4 text-sm text-gray-600">
+                  <p className="mb-4 text-sm text-gray-400 line-clamp-2">
                     {playground.description || 'No description'}
                   </p>
                   <div className="mb-4 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-violet-100 px-2 py-1 text-xs text-violet-700">
+                    <span className="rounded-full bg-purple-600/20 px-2.5 py-1 text-xs text-purple-300 border border-purple-600/30">
                       {playground.framework}
                     </span>
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700">
+                    <span className="rounded-full bg-blue-600/20 px-2.5 py-1 text-xs text-blue-300 border border-blue-600/30">
                       {playground.language}
                     </span>
-                    <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
+                    <span className="rounded-full bg-green-600/20 px-2.5 py-1 text-xs text-green-300 border border-green-600/30">
                       {playground.styling}
                     </span>
                   </div>
@@ -450,12 +604,62 @@ export default function PlaygroundPage() {
                     </span>
                   </div>
                 </div>
-                <div className="absolute inset-x-0 bottom-0 flex h-1 bg-gradient-to-r from-violet-600 to-purple-600 opacity-0 transition-opacity group-hover:opacity-100" />
+                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-purple-600 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform" />
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredPlaygrounds.map((playground) => (
+              <Link
+                key={playground.id}
+                href={`/playground/${playground.id}`}
+                className="group flex items-center justify-between p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-purple-600/50 transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="rounded-lg bg-gradient-to-br from-purple-600/20 to-blue-600/20 p-2.5">
+                    <Code2 className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white group-hover:text-purple-300 transition-colors">
+                      {playground.name}
+                    </h3>
+                    <div className="flex items-center gap-4 mt-1">
+                      <span className="text-xs text-gray-400">
+                        {playground.framework} • {playground.language}
+                      </span>
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {playground.views_count}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3 w-3" />
+                          {playground.stars_count}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {playground.is_public && (
+                    <Globe className="h-4 w-4 text-green-400" />
+                  )}
+                  {playground.deployment_url && (
+                    <Cloud className="h-4 w-4 text-blue-400" />
+                  )}
+                  <ChevronRight className="h-4 w-4 text-gray-500 group-hover:text-purple-400 transition-colors" />
+                </div>
               </Link>
             ))}
           </div>
         )}
       </div>
+
+      {/* Pricing Modal */}
+      {showPricing && (
+        <PricingPlans onClose={() => setShowPricing(false)} />
+      )}
     </div>
   )
 }

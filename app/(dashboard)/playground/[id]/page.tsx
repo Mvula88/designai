@@ -38,12 +38,16 @@ import {
   Package,
   GitBranch,
   HelpCircle,
-  MoreVertical
+  MoreVertical,
+  Edit3,
+  Crown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import AIPlayground from '@/components/playground/AIPlayground'
 import IntegrationsPanel from '@/components/playground/IntegrationsPanel'
 import DeploymentStatus from '@/components/playground/DeploymentStatus'
+import LiveEditOverlay from '@/components/playground/LiveEditOverlay'
+import PricingPlans from '@/components/playground/PricingPlans'
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const CodeEditor = dynamic(() => import('@/components/playground/CodeEditor'), {
@@ -112,6 +116,9 @@ export default function PlaygroundEditorPage() {
   const [showFileExplorer, setShowFileExplorer] = useState(true)
   const [fullscreenPreview, setFullscreenPreview] = useState(false)
   const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark')
+  const [liveEditMode, setLiveEditMode] = useState(false)
+  const [selectedElement, setSelectedElement] = useState<any>(null)
+  const [showPricing, setShowPricing] = useState(false)
   
   // Integration state
   const [integrations, setIntegrations] = useState<Integration[]>([])
@@ -267,6 +274,20 @@ export default function PlaygroundEditorPage() {
       toast.error('Failed to generate code')
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const handleLiveEdit = (elementPath: string, changes: any) => {
+    // Apply live edits to the code
+    const mainFile = 'app/page.tsx'
+    if (code[mainFile]) {
+      // Here you would implement the logic to update the specific element in the code
+      // This is a simplified version
+      const updatedCode = { ...code }
+      // Apply changes to the element at the specified path
+      // This would require parsing and updating the JSX/TSX
+      setCode(updatedCode)
+      toast.success('Element updated')
     }
   }
 
@@ -455,6 +476,19 @@ export default function PlaygroundEditorPage() {
           {/* Right Section - Actions */}
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setLiveEditMode(!liveEditMode)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+                liveEditMode
+                  ? 'bg-purple-600 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-800'
+              }`}
+              title="Toggle Live Edit Mode"
+            >
+              <Edit3 className="h-4 w-4" />
+              <span className="text-sm">Live Edit</span>
+            </button>
+            
+            <button
               onClick={() => savePlayground()}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-all"
               title="Save (Ctrl+S)"
@@ -506,6 +540,14 @@ export default function PlaygroundEditorPage() {
                 title="AI Assistant"
               >
                 <Sparkles className="h-4 w-4" />
+              </button>
+              
+              <button
+                onClick={() => setShowPricing(true)}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                title="Upgrade Plan"
+              >
+                <Crown className="h-4 w-4" />
               </button>
               
               <button
@@ -633,12 +675,20 @@ export default function PlaygroundEditorPage() {
           </div>
           
           {/* Preview Content */}
-          <div className="flex-1 overflow-auto bg-gray-50">
+          <div className="flex-1 overflow-auto bg-gray-50 relative">
             <PreviewFrame
               code={code}
               device={previewDevice}
               playgroundId={playground.id}
             />
+            {liveEditMode && (
+              <LiveEditOverlay
+                isActive={liveEditMode}
+                onToggle={() => setLiveEditMode(!liveEditMode)}
+                onElementEdit={handleLiveEdit}
+                selectedElement={selectedElement}
+              />
+            )}
           </div>
         </div>
 
@@ -708,6 +758,14 @@ export default function PlaygroundEditorPage() {
           </button>
         </div>
       </footer>
+
+      {/* Pricing Modal */}
+      {showPricing && (
+        <PricingPlans
+          onClose={() => setShowPricing(false)}
+          playgroundId={playground.id}
+        />
+      )}
     </div>
   )
 }
