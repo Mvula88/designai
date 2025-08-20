@@ -14,9 +14,7 @@ import {
   Cloud,
   Key,
   Code2,
-  MessageSquare,
   Save,
-  Play,
   Settings,
   FolderOpen,
   FileCode2,
@@ -25,22 +23,26 @@ import {
   ExternalLink,
   Check,
   X,
-  Eye,
-  EyeOff,
   Maximize2,
   Minimize2,
   RefreshCw,
-  Download,
-  Upload,
-  Share2,
   Zap,
-  Terminal,
   Package,
   GitBranch,
   HelpCircle,
-  MoreVertical,
   Edit3,
-  Crown
+  Crown,
+  CreditCard,
+  ChevronRight,
+  Menu,
+  Home,
+  Activity,
+  Database,
+  Shield,
+  Terminal,
+  Globe,
+  Play,
+  Pause
 } from 'lucide-react'
 import { toast } from 'sonner'
 import AIPlayground from '@/components/playground/AIPlayground'
@@ -48,16 +50,14 @@ import IntegrationsPanel from '@/components/playground/IntegrationsPanel'
 import DeploymentStatus from '@/components/playground/DeploymentStatus'
 import LiveEditOverlay from '@/components/playground/LiveEditOverlay'
 import PricingPlans from '@/components/playground/PricingPlans'
+import StripeConnect from '@/components/playground/StripeConnect'
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const CodeEditor = dynamic(() => import('@/components/playground/CodeEditor'), {
   ssr: false,
   loading: () => (
     <div className="flex h-full items-center justify-center bg-gray-950">
-      <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-500 mx-auto mb-2" />
-        <p className="text-gray-400 text-sm">Loading editor...</p>
-      </div>
+      <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
     </div>
   )
 })
@@ -68,10 +68,7 @@ const PreviewFrame = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex h-full items-center justify-center bg-white">
-        <div className="text-center">
-          <Layout className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">Loading preview...</p>
-        </div>
+        <Layout className="h-8 w-8 text-gray-400" />
       </div>
     )
   }
@@ -110,15 +107,13 @@ export default function PlaygroundEditorPage() {
   
   // UI state
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
-  const [showChat, setShowChat] = useState(true)
-  const [showIntegrations, setShowIntegrations] = useState(false)
-  const [showDeployment, setShowDeployment] = useState(false)
-  const [showFileExplorer, setShowFileExplorer] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [activePanel, setActivePanel] = useState<'ai' | 'stripe' | 'files' | 'integrations' | null>('files')
   const [fullscreenPreview, setFullscreenPreview] = useState(false)
-  const [editorTheme, setEditorTheme] = useState<'dark' | 'light'>('dark')
   const [liveEditMode, setLiveEditMode] = useState(false)
   const [selectedElement, setSelectedElement] = useState<any>(null)
   const [showPricing, setShowPricing] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   
   // Integration state
   const [integrations, setIntegrations] = useState<Integration[]>([])
@@ -162,33 +157,30 @@ export default function PlaygroundEditorPage() {
       if (error) throw error
 
       setPlayground(data)
-      setCode(
-        data.current_code || {
-          'app/page.tsx': `export default function Home() {
+      setCode(data.current_code || {
+        'app/page.tsx': `export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
       <div className="container mx-auto px-4 py-20">
-        <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-          Welcome to DesignShip
+        <h1 className="text-5xl font-bold text-center mb-4">
+          Welcome to Your App
         </h1>
         <p className="text-xl text-center text-gray-600">
-          Start building your app with AI assistance
+          Start building with AI assistance
         </p>
       </div>
     </div>
   )
 }`,
-          'package.json': `{
-  "name": "designship-app",
+        'package.json': `{
+  "name": "my-app",
   "version": "1.0.0",
   "dependencies": {
     "react": "^18.2.0",
-    "next": "^14.0.0",
-    "tailwindcss": "^3.4.0"
+    "next": "^14.0.0"
   }
-}`,
-        }
-      )
+}`
+      })
       setPromptHistory(data.prompt_history || [])
     } catch (error) {
       console.error('Failed to load playground:', error)
@@ -256,11 +248,8 @@ export default function PlaygroundEditorPage() {
       if (!response.ok) throw new Error('Generation failed')
 
       const data = await response.json()
-
-      // Update code with generated files
       setCode(data.code)
 
-      // Add to prompt history
       const newHistoryItem = {
         prompt,
         response: data.explanation,
@@ -278,26 +267,19 @@ export default function PlaygroundEditorPage() {
   }
 
   const handleLiveEdit = (elementPath: string, changes: any) => {
-    // Apply live edits to the code
     const mainFile = 'app/page.tsx'
     if (code[mainFile]) {
-      // Here you would implement the logic to update the specific element in the code
-      // This is a simplified version
       const updatedCode = { ...code }
-      // Apply changes to the element at the specified path
-      // This would require parsing and updating the JSX/TSX
       setCode(updatedCode)
       toast.success('Element updated')
     }
   }
 
   const deployToGitHub = async () => {
-    const githubIntegration = integrations.find(
-      (i) => i.service_type === 'github'
-    )
+    const githubIntegration = integrations.find(i => i.service_type === 'github')
     if (!githubIntegration) {
       toast.error('Please connect GitHub first')
-      setShowIntegrations(true)
+      setActivePanel('integrations')
       return
     }
 
@@ -316,7 +298,6 @@ export default function PlaygroundEditorPage() {
 
       const data = await response.json()
       toast.success(`Deployed to GitHub: ${data.repoUrl}`)
-      setShowDeployment(true)
     } catch (error) {
       console.error('Failed to deploy:', error)
       toast.error('Failed to deploy to GitHub')
@@ -339,8 +320,8 @@ export default function PlaygroundEditorPage() {
 
       const data = await response.json()
       toast.success('Deploying to Vercel...')
+      setPreviewUrl(data.deploymentUrl)
       window.open(data.deploymentUrl, '_blank')
-      setShowDeployment(true)
     } catch (error) {
       console.error('Failed to deploy:', error)
       toast.error('Failed to deploy to Vercel')
@@ -368,10 +349,9 @@ export default function PlaygroundEditorPage() {
         <div className="text-center">
           <X className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-white mb-2">Playground Not Found</h2>
-          <p className="text-gray-400 mb-4">The requested playground does not exist</p>
           <button
             onClick={() => router.push('/playground')}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             Back to Playgrounds
           </button>
@@ -381,51 +361,130 @@ export default function PlaygroundEditorPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-950">
-      {/* Professional Header Bar */}
-      <header className="h-14 border-b border-gray-800 bg-gray-900/50 backdrop-blur-xl">
-        <div className="flex h-full items-center justify-between px-4">
-          {/* Left Section */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/playground')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="text-sm font-medium">Back</span>
-            </button>
-            
-            <div className="h-6 w-px bg-gray-700" />
-            
+    <div className="flex h-screen bg-gray-950">
+      {/* Professional Sidebar */}
+      <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300`}>
+        {/* Logo Section */}
+        <div className="h-16 border-b border-gray-800 flex items-center justify-between px-4">
+          {!sidebarCollapsed && (
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg blur opacity-50" />
-                <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-1.5">
-                  <Code2 className="h-4 w-4 text-white" />
-                </div>
+              <div className="p-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600">
+                <Code2 className="h-5 w-5 text-white" />
               </div>
-              <div>
-                <input
-                  type="text"
-                  value={playground.name}
-                  onChange={(e) => setPlayground({ ...playground, name: e.target.value })}
-                  className="bg-transparent text-white font-semibold outline-none text-sm"
-                  onBlur={savePlayground}
-                />
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span>{playground.framework}</span>
-                  <span>•</span>
-                  <span>{playground.language}</span>
-                  {lastSaved && (
-                    <>
-                      <span>•</span>
-                      <span>Saved {lastSaved.toLocaleTimeString()}</span>
-                    </>
-                  )}
-                </div>
-              </div>
+              <span className="text-white font-semibold">Playground</span>
             </div>
-            
+          )}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-1">
+          <button
+            onClick={() => router.push('/playground')}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+          >
+            <Home className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="text-sm">Dashboard</span>}
+          </button>
+
+          <div className="my-3 h-px bg-gray-800" />
+
+          <button
+            onClick={() => setActivePanel(activePanel === 'files' ? null : 'files')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+              activePanel === 'files' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <FolderOpen className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="text-sm">Files</span>}
+          </button>
+
+          <button
+            onClick={() => setActivePanel(activePanel === 'ai' ? null : 'ai')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+              activePanel === 'ai' ? 'bg-purple-600/20 text-purple-400 border border-purple-600/30' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="text-sm">AI Assistant</span>}
+          </button>
+
+          <button
+            onClick={() => setActivePanel(activePanel === 'stripe' ? null : 'stripe')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+              activePanel === 'stripe' ? 'bg-green-600/20 text-green-400 border border-green-600/30' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <CreditCard className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="text-sm">Payments</span>}
+          </button>
+
+          <button
+            onClick={() => setActivePanel(activePanel === 'integrations' ? null : 'integrations')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+              activePanel === 'integrations' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <Key className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="text-sm">Integrations</span>}
+          </button>
+
+          <div className="my-3 h-px bg-gray-800" />
+
+          <button
+            onClick={deployToGitHub}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+          >
+            <Github className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="text-sm">Push to GitHub</span>}
+          </button>
+
+          <button
+            onClick={deployToVercel}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+          >
+            <Cloud className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="text-sm">Deploy</span>}
+          </button>
+        </nav>
+
+        {/* Upgrade Button */}
+        <div className="p-3 border-t border-gray-800">
+          <button
+            onClick={() => setShowPricing(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all"
+          >
+            <Crown className="h-4 w-4" />
+            {!sidebarCollapsed && <span className="text-sm font-medium">Upgrade</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Top Bar */}
+        <header className="h-16 border-b border-gray-800 bg-gray-900/50 backdrop-blur-xl flex items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <input
+              type="text"
+              value={playground.name}
+              onChange={(e) => setPlayground({ ...playground, name: e.target.value })}
+              className="text-xl font-semibold bg-transparent text-white outline-none"
+              onBlur={savePlayground}
+            />
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 bg-purple-600/20 text-purple-300 text-xs rounded-full border border-purple-600/30">
+                {playground.framework}
+              </span>
+              <span className="px-2 py-0.5 bg-blue-600/20 text-blue-300 text-xs rounded-full border border-blue-600/30">
+                {playground.language}
+              </span>
+            </div>
             {saving && (
               <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg">
                 <Loader2 className="h-3 w-3 animate-spin text-purple-500" />
@@ -434,17 +493,16 @@ export default function PlaygroundEditorPage() {
             )}
           </div>
 
-          {/* Center Section - Device Preview */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Device Preview Selector */}
             <div className="flex items-center bg-gray-800 rounded-lg p-1">
               <button
                 onClick={() => setPreviewDevice('desktop')}
                 className={`px-3 py-1.5 rounded-md transition-all ${
                   previewDevice === 'desktop'
-                    ? 'bg-gray-700 text-white shadow-sm'
+                    ? 'bg-gray-700 text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
-                title="Desktop Preview"
               >
                 <Monitor className="h-4 w-4" />
               </button>
@@ -452,10 +510,9 @@ export default function PlaygroundEditorPage() {
                 onClick={() => setPreviewDevice('tablet')}
                 className={`px-3 py-1.5 rounded-md transition-all ${
                   previewDevice === 'tablet'
-                    ? 'bg-gray-700 text-white shadow-sm'
+                    ? 'bg-gray-700 text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
-                title="Tablet Preview"
               >
                 <Tablet className="h-4 w-4" />
               </button>
@@ -463,301 +520,223 @@ export default function PlaygroundEditorPage() {
                 onClick={() => setPreviewDevice('mobile')}
                 className={`px-3 py-1.5 rounded-md transition-all ${
                   previewDevice === 'mobile'
-                    ? 'bg-gray-700 text-white shadow-sm'
+                    ? 'bg-gray-700 text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
-                title="Mobile Preview"
               >
                 <Smartphone className="h-4 w-4" />
               </button>
             </div>
-          </div>
 
-          {/* Right Section - Actions */}
-          <div className="flex items-center gap-2">
+            {/* Action Buttons */}
             <button
               onClick={() => setLiveEditMode(!liveEditMode)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
                 liveEditMode
                   ? 'bg-purple-600 text-white'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  : 'bg-gray-800 text-gray-300 hover:text-white'
               }`}
-              title="Toggle Live Edit Mode"
             >
               <Edit3 className="h-4 w-4" />
               <span className="text-sm">Live Edit</span>
             </button>
-            
+
             <button
-              onClick={() => savePlayground()}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-all"
-              title="Save (Ctrl+S)"
+              onClick={savePlayground}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white transition-all"
             >
               <Save className="h-4 w-4" />
               <span className="text-sm">Save</span>
             </button>
-            
-            <button
-              onClick={deployToGitHub}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-all"
-              title="Push to GitHub"
-            >
-              <Github className="h-4 w-4" />
-              <span className="text-sm">Push</span>
-            </button>
-            
+
             <button
               onClick={deployToVercel}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg shadow-purple-500/25"
-              title="Deploy to Production"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg shadow-purple-600/25"
             >
               <Zap className="h-4 w-4" />
               <span className="text-sm font-medium">Deploy</span>
             </button>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Panel */}
+          {activePanel && (
+            <aside className="w-96 border-r border-gray-800 bg-gray-900/50 flex flex-col">
+              <div className="p-4 border-b border-gray-800">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  {activePanel === 'ai' && <><Sparkles className="h-4 w-4 text-purple-400" /> AI Assistant</>}
+                  {activePanel === 'stripe' && <><CreditCard className="h-4 w-4 text-green-400" /> Stripe Payments</>}
+                  {activePanel === 'files' && <><FolderOpen className="h-4 w-4 text-blue-400" /> File Explorer</>}
+                  {activePanel === 'integrations' && <><Key className="h-4 w-4 text-yellow-400" /> Integrations</>}
+                </h3>
+              </div>
+              
+              <div className="flex-1 overflow-auto">
+                {activePanel === 'ai' && (
+                  <AIPlayground
+                    onPromptSubmit={handlePromptSubmit}
+                    isGenerating={isGenerating}
+                    promptHistory={promptHistory}
+                    integrations={integrations}
+                  />
+                )}
+                
+                {activePanel === 'stripe' && (
+                  <div className="p-4">
+                    <StripeConnect
+                      playgroundId={playground.id}
+                      onClose={() => setActivePanel(null)}
+                    />
+                  </div>
+                )}
+                
+                {activePanel === 'files' && (
+                  <div className="p-4 space-y-1">
+                    {Object.keys(code).map((fileName) => (
+                      <button
+                        key={fileName}
+                        onClick={() => setSelectedFile(fileName)}
+                        className={`w-full px-3 py-2 text-left text-sm rounded-lg transition-all flex items-center gap-2 ${
+                          selectedFile === fileName
+                            ? 'bg-gray-800 text-white'
+                            : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                        }`}
+                      >
+                        <FileCode2 className="h-4 w-4" />
+                        {fileName}
+                      </button>
+                    ))}
+                    <button className="w-full px-3 py-2 text-left text-sm rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 flex items-center gap-2">
+                      <span className="text-lg leading-none">+</span>
+                      Add File
+                    </button>
+                  </div>
+                )}
+                
+                {activePanel === 'integrations' && (
+                  <IntegrationsPanel
+                    playgroundId={playground.id}
+                    integrations={integrations}
+                    onIntegrationsChange={loadIntegrations}
+                  />
+                )}
+              </div>
+            </aside>
+          )}
+
+          {/* Code Editor */}
+          <div className="flex-1 flex flex-col bg-gray-950">
+            <div className="h-10 bg-gray-900 border-b border-gray-800 flex items-center px-2 gap-1 overflow-x-auto">
+              {Object.keys(code).map((fileName) => (
+                <button
+                  key={fileName}
+                  onClick={() => setSelectedFile(fileName)}
+                  className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-2 ${
+                    selectedFile === fileName
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                  }`}
+                >
+                  <FileCode2 className="h-3 w-3" />
+                  {fileName}
+                </button>
+              ))}
+            </div>
             
-            <div className="h-6 w-px bg-gray-700 mx-2" />
+            <div className="flex-1">
+              <CodeEditor
+                files={code}
+                selectedFile={selectedFile}
+                onFileSelect={setSelectedFile}
+                onCodeChange={(file, newCode) => {
+                  setCode({ ...code, [file]: newCode })
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Preview Panel */}
+          <div className={`${fullscreenPreview ? 'fixed inset-0 z-50' : 'flex-1'} flex flex-col bg-white`}>
+            <div className="h-10 bg-gray-100 border-b border-gray-200 flex items-center justify-between px-3">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                </div>
+                <span className="text-xs text-gray-600 ml-2">
+                  Preview • {previewDevice}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setFullscreenPreview(!fullscreenPreview)}
+                  className="p-1 rounded hover:bg-gray-200 text-gray-600"
+                >
+                  {fullscreenPreview ? (
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+                <button className="p-1 rounded hover:bg-gray-200 text-gray-600">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                </button>
+                <button className="p-1 rounded hover:bg-gray-200 text-gray-600">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
             
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setShowIntegrations(!showIntegrations)}
-                className={`p-2 rounded-lg transition-all ${
-                  showIntegrations
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                }`}
-                title="Integrations"
-              >
-                <Key className="h-4 w-4" />
-              </button>
-              
-              <button
-                onClick={() => setShowChat(!showChat)}
-                className={`p-2 rounded-lg transition-all ${
-                  showChat
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                }`}
-                title="AI Assistant"
-              >
-                <Sparkles className="h-4 w-4" />
-              </button>
-              
-              <button
-                onClick={() => setShowPricing(true)}
-                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-                title="Upgrade Plan"
-              >
-                <Crown className="h-4 w-4" />
-              </button>
-              
-              <button
-                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-                title="Settings"
-              >
-                <Settings className="h-4 w-4" />
-              </button>
+            <div className="flex-1 overflow-auto bg-gray-50 relative">
+              <PreviewFrame
+                code={code}
+                device={previewDevice}
+                playgroundId={playground.id}
+              />
+              {liveEditMode && (
+                <LiveEditOverlay
+                  isActive={liveEditMode}
+                  onToggle={() => setLiveEditMode(!liveEditMode)}
+                  onElementEdit={handleLiveEdit}
+                  selectedElement={selectedElement}
+                />
+              )}
             </div>
           </div>
         </div>
-      </header>
 
-      {/* Main Content Area with Professional Layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* AI Assistant Panel */}
-        {showChat && (
-          <aside className="w-80 border-r border-gray-800 bg-gray-900/50 flex flex-col">
-            <div className="p-4 border-b border-gray-800">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-purple-500" />
-                  AI Assistant
-                </h3>
-                <button
-                  onClick={() => setShowChat(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <p className="text-xs text-gray-400">
-                Ask me to help you build your app
-              </p>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <AIPlayground
-                onPromptSubmit={handlePromptSubmit}
-                isGenerating={isGenerating}
-                promptHistory={promptHistory}
-                integrations={integrations}
-              />
-            </div>
-          </aside>
-        )}
-
-        {/* Code Editor Section */}
-        <div className="flex-1 flex flex-col bg-gray-950">
-          {/* File Tabs */}
-          <div className="h-10 bg-gray-900 border-b border-gray-800 flex items-center px-2 gap-1 overflow-x-auto">
-            {Object.keys(code).map((fileName) => (
-              <button
-                key={fileName}
-                onClick={() => setSelectedFile(fileName)}
-                className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-2 ${
-                  selectedFile === fileName
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                }`}
-              >
-                <FileCode2 className="h-3 w-3" />
-                {fileName}
-              </button>
-            ))}
-            <button
-              className="px-2 py-1 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition-all"
-              title="Add file"
-            >
-              <span className="text-sm">+</span>
+        {/* Status Bar */}
+        <footer className="h-8 bg-gray-900 border-t border-gray-800 flex items-center justify-between px-4">
+          <div className="flex items-center gap-4 text-xs text-gray-400">
+            <span className="flex items-center gap-1">
+              <Activity className="h-3 w-3" />
+              Ready
+            </span>
+            <span className="flex items-center gap-1">
+              <Package className="h-3 w-3" />
+              {Object.keys(code).length} files
+            </span>
+            <span className="flex items-center gap-1">
+              <GitBranch className="h-3 w-3" />
+              main
+            </span>
+          </div>
+          <div className="flex items-center gap-4 text-xs text-gray-400">
+            {lastSaved && (
+              <span className="flex items-center gap-1 text-green-500">
+                <Check className="h-3 w-3" />
+                Saved {lastSaved.toLocaleTimeString()}
+              </span>
+            )}
+            <button className="hover:text-white">
+              <HelpCircle className="h-3 w-3" />
             </button>
           </div>
-          
-          {/* Editor */}
-          <div className="flex-1 overflow-hidden">
-            <CodeEditor
-              files={code}
-              selectedFile={selectedFile}
-              onFileSelect={setSelectedFile}
-              onCodeChange={(file, newCode) => {
-                setCode({ ...code, [file]: newCode })
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Preview Panel */}
-        <div className={`${fullscreenPreview ? 'fixed inset-0 z-50' : 'flex-1'} flex flex-col bg-white`}>
-          {/* Preview Header */}
-          <div className="h-10 bg-gray-100 border-b border-gray-200 flex items-center justify-between px-3">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-              </div>
-              <span className="text-xs text-gray-600 ml-2">
-                Preview • {previewDevice}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                className="p-1 rounded hover:bg-gray-200 text-gray-600"
-                title="Refresh"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => setFullscreenPreview(!fullscreenPreview)}
-                className="p-1 rounded hover:bg-gray-200 text-gray-600"
-                title={fullscreenPreview ? 'Exit fullscreen' : 'Fullscreen'}
-              >
-                {fullscreenPreview ? (
-                  <Minimize2 className="h-3.5 w-3.5" />
-                ) : (
-                  <Maximize2 className="h-3.5 w-3.5" />
-                )}
-              </button>
-              <button
-                className="p-1 rounded hover:bg-gray-200 text-gray-600"
-                title="Open in new tab"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-          
-          {/* Preview Content */}
-          <div className="flex-1 overflow-auto bg-gray-50 relative">
-            <PreviewFrame
-              code={code}
-              device={previewDevice}
-              playgroundId={playground.id}
-            />
-            {liveEditMode && (
-              <LiveEditOverlay
-                isActive={liveEditMode}
-                onToggle={() => setLiveEditMode(!liveEditMode)}
-                onElementEdit={handleLiveEdit}
-                selectedElement={selectedElement}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Integrations Panel */}
-        {showIntegrations && (
-          <aside className="w-80 border-l border-gray-800 bg-gray-900/50">
-            <div className="p-4 border-b border-gray-800">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Key className="h-4 w-4 text-blue-500" />
-                  Integrations
-                </h3>
-                <button
-                  onClick={() => setShowIntegrations(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <IntegrationsPanel
-              playgroundId={playground.id}
-              integrations={integrations}
-              onIntegrationsChange={loadIntegrations}
-            />
-          </aside>
-        )}
+        </footer>
       </div>
-
-      {/* Deployment Status Popup */}
-      {showDeployment && (
-        <div className="fixed bottom-4 right-4 z-40">
-          <DeploymentStatus playgroundId={playground.id} />
-        </div>
-      )}
-
-      {/* Status Bar */}
-      <footer className="h-6 bg-gray-900 border-t border-gray-800 flex items-center justify-between px-4 text-xs">
-        <div className="flex items-center gap-4 text-gray-400">
-          <span className="flex items-center gap-1">
-            <Package className="h-3 w-3" />
-            {playground.framework}
-          </span>
-          <span className="flex items-center gap-1">
-            <FileCode2 className="h-3 w-3" />
-            {Object.keys(code).length} files
-          </span>
-          <span className="flex items-center gap-1">
-            <GitBranch className="h-3 w-3" />
-            main
-          </span>
-        </div>
-        <div className="flex items-center gap-4 text-gray-400">
-          {saving ? (
-            <span className="flex items-center gap-1 text-yellow-500">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Saving...
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-green-500">
-              <Check className="h-3 w-3" />
-              All changes saved
-            </span>
-          )}
-          <button className="hover:text-white">
-            <HelpCircle className="h-3 w-3" />
-          </button>
-        </div>
-      </footer>
 
       {/* Pricing Modal */}
       {showPricing && (
