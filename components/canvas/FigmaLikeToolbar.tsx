@@ -23,9 +23,9 @@ import {
   AlignLeft,
   AlignCenterHorizontal,
   AlignRight,
-  AlignTop,
+  AlignStartVertical,
   AlignCenterVertical,
-  AlignBottom,
+  AlignEndVertical,
   AlignHorizontalDistributeCenter,
   AlignVerticalDistributeCenter,
   
@@ -574,7 +574,7 @@ export function FigmaLikeToolbar({ canvas, fabric }: FigmaLikeToolbarProps) {
               className="flex-1 p-2 rounded hover:bg-gray-100"
               title="Align top"
             >
-              <AlignTop className="h-4 w-4 mx-auto" />
+              <AlignStartVertical className="h-4 w-4 mx-auto" />
             </button>
             <button
               onClick={() => alignObjects('center-v')}
@@ -588,7 +588,7 @@ export function FigmaLikeToolbar({ canvas, fabric }: FigmaLikeToolbarProps) {
               className="flex-1 p-2 rounded hover:bg-gray-100"
               title="Align bottom"
             >
-              <AlignBottom className="h-4 w-4 mx-auto" />
+              <AlignEndVertical className="h-4 w-4 mx-auto" />
             </button>
           </div>
 

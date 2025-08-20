@@ -19,7 +19,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+// Only load Stripe if the publishable key is available
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null
 
 interface PricingPlansProps {
   onClose: () => void
@@ -96,6 +99,12 @@ export default function PricingPlans({ onClose, playgroundId }: PricingPlansProp
       return
     }
 
+    // Check if Stripe is configured
+    if (!stripePromise) {
+      toast.error('Payment processing is not configured. Please contact support.')
+      return
+    }
+
     setLoading(planName)
     try {
       const response = await fetch('/api/stripe/create-checkout-session', {
@@ -108,7 +117,10 @@ export default function PricingPlans({ onClose, playgroundId }: PricingPlansProp
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to create checkout session')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create checkout session')
+      }
 
       const { sessionId } = await response.json()
       const stripe = await stripePromise
@@ -117,9 +129,9 @@ export default function PricingPlans({ onClose, playgroundId }: PricingPlansProp
 
       const { error } = await stripe.redirectToCheckout({ sessionId })
       if (error) throw error
-    } catch (error) {
+    } catch (error: any) {
       console.error('Subscription error:', error)
-      toast.error('Failed to start subscription')
+      toast.error(error.message || 'Failed to start subscription')
     } finally {
       setLoading(null)
     }
