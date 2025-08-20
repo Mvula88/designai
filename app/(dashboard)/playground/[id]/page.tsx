@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import {
-  ChevronLeft,
   Smartphone,
   Tablet,
   Monitor,
@@ -34,15 +33,9 @@ import {
   Crown,
   CreditCard,
   ChevronRight,
-  Menu,
-  Home,
   Activity,
-  Database,
-  Shield,
-  Terminal,
-  Globe,
-  Play,
-  Pause
+  Plus,
+  Globe
 } from 'lucide-react'
 import { toast } from 'sonner'
 import AIPlayground from '@/components/playground/AIPlayground'
@@ -107,8 +100,7 @@ export default function PlaygroundEditorPage() {
   
   // UI state
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [activePanel, setActivePanel] = useState<'ai' | 'stripe' | 'files' | 'integrations' | null>('files')
+  const [activePanel, setActivePanel] = useState<'ai' | 'stripe' | 'files' | 'integrations' | null>(null)
   const [fullscreenPreview, setFullscreenPreview] = useState(false)
   const [liveEditMode, setLiveEditMode] = useState(false)
   const [selectedElement, setSelectedElement] = useState<any>(null)
@@ -362,215 +354,219 @@ export default function PlaygroundEditorPage() {
 
   return (
     <div className="flex h-screen bg-gray-950">
-      {/* Professional Sidebar */}
-      <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-300`}>
-        {/* Logo Section */}
-        <div className="h-16 border-b border-gray-800 flex items-center justify-between px-4">
-          {!sidebarCollapsed && (
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600">
-                <Code2 className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-white font-semibold">Playground</span>
-            </div>
-          )}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-          >
-            <Menu className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1">
-          <button
-            onClick={() => router.push('/playground')}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-          >
-            <Home className="h-4 w-4" />
-            {!sidebarCollapsed && <span className="text-sm">Dashboard</span>}
-          </button>
-
-          <div className="my-3 h-px bg-gray-800" />
-
-          <button
-            onClick={() => setActivePanel(activePanel === 'files' ? null : 'files')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-              activePanel === 'files' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            <FolderOpen className="h-4 w-4" />
-            {!sidebarCollapsed && <span className="text-sm">Files</span>}
-          </button>
-
-          <button
-            onClick={() => setActivePanel(activePanel === 'ai' ? null : 'ai')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-              activePanel === 'ai' ? 'bg-purple-600/20 text-purple-400 border border-purple-600/30' : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            <Sparkles className="h-4 w-4" />
-            {!sidebarCollapsed && <span className="text-sm">AI Assistant</span>}
-          </button>
-
-          <button
-            onClick={() => setActivePanel(activePanel === 'stripe' ? null : 'stripe')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-              activePanel === 'stripe' ? 'bg-green-600/20 text-green-400 border border-green-600/30' : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            <CreditCard className="h-4 w-4" />
-            {!sidebarCollapsed && <span className="text-sm">Payments</span>}
-          </button>
-
-          <button
-            onClick={() => setActivePanel(activePanel === 'integrations' ? null : 'integrations')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-              activePanel === 'integrations' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            <Key className="h-4 w-4" />
-            {!sidebarCollapsed && <span className="text-sm">Integrations</span>}
-          </button>
-
-          <div className="my-3 h-px bg-gray-800" />
-
-          <button
-            onClick={deployToGitHub}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-          >
-            <Github className="h-4 w-4" />
-            {!sidebarCollapsed && <span className="text-sm">Push to GitHub</span>}
-          </button>
-
-          <button
-            onClick={deployToVercel}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
-          >
-            <Cloud className="h-4 w-4" />
-            {!sidebarCollapsed && <span className="text-sm">Deploy</span>}
-          </button>
-        </nav>
-
-        {/* Upgrade Button */}
-        <div className="p-3 border-t border-gray-800">
-          <button
-            onClick={() => setShowPricing(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all"
-          >
-            <Crown className="h-4 w-4" />
-            {!sidebarCollapsed && <span className="text-sm font-medium">Upgrade</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
+      {/* Main Content Area - Full Width */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <header className="h-16 border-b border-gray-800 bg-gray-900/50 backdrop-blur-xl flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <input
-              type="text"
-              value={playground.name}
-              onChange={(e) => setPlayground({ ...playground, name: e.target.value })}
-              className="text-xl font-semibold bg-transparent text-white outline-none"
-              onBlur={savePlayground}
-            />
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 bg-purple-600/20 text-purple-300 text-xs rounded-full border border-purple-600/30">
-                {playground.framework}
-              </span>
-              <span className="px-2 py-0.5 bg-blue-600/20 text-blue-300 text-xs rounded-full border border-blue-600/30">
-                {playground.language}
-              </span>
-            </div>
-            {saving && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg">
-                <Loader2 className="h-3 w-3 animate-spin text-purple-500" />
-                <span className="text-xs text-gray-400">Saving...</span>
+        {/* Enhanced Top Bar with All Controls */}
+        <header className="h-14 border-b border-gray-800 bg-gray-900/50 backdrop-blur-xl">
+          <div className="flex h-full items-center justify-between px-4">
+            {/* Left Section - Logo and Project Info */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push('/playground')}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="text-sm">Back</span>
+              </button>
+              
+              <div className="h-6 w-px bg-gray-700" />
+              
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600">
+                  <Code2 className="h-4 w-4 text-white" />
+                </div>
+                <input
+                  type="text"
+                  value={playground.name}
+                  onChange={(e) => setPlayground({ ...playground, name: e.target.value })}
+                  className="text-lg font-semibold bg-transparent text-white outline-none"
+                  onBlur={savePlayground}
+                />
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-purple-600/20 text-purple-300 text-xs rounded-full border border-purple-600/30">
+                    {playground.framework}
+                  </span>
+                  <span className="px-2 py-0.5 bg-blue-600/20 text-blue-300 text-xs rounded-full border border-blue-600/30">
+                    {playground.language}
+                  </span>
+                </div>
+                {saving && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-lg">
+                    <Loader2 className="h-3 w-3 animate-spin text-purple-500" />
+                    <span className="text-xs text-gray-400">Saving...</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Device Preview Selector */}
-            <div className="flex items-center bg-gray-800 rounded-lg p-1">
-              <button
-                onClick={() => setPreviewDevice('desktop')}
-                className={`px-3 py-1.5 rounded-md transition-all ${
-                  previewDevice === 'desktop'
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Monitor className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setPreviewDevice('tablet')}
-                className={`px-3 py-1.5 rounded-md transition-all ${
-                  previewDevice === 'tablet'
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Tablet className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setPreviewDevice('mobile')}
-                className={`px-3 py-1.5 rounded-md transition-all ${
-                  previewDevice === 'mobile'
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Smartphone className="h-4 w-4" />
-              </button>
             </div>
 
-            {/* Action Buttons */}
-            <button
-              onClick={() => setLiveEditMode(!liveEditMode)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
-                liveEditMode
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:text-white'
-              }`}
-            >
-              <Edit3 className="h-4 w-4" />
-              <span className="text-sm">Live Edit</span>
-            </button>
+            {/* Center Section - Device Preview */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center bg-gray-800 rounded-lg p-1">
+                <button
+                  onClick={() => setPreviewDevice('desktop')}
+                  className={`px-2.5 py-1 rounded-md transition-all ${
+                    previewDevice === 'desktop'
+                      ? 'bg-gray-700 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  title="Desktop Preview"
+                >
+                  <Monitor className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPreviewDevice('tablet')}
+                  className={`px-2.5 py-1 rounded-md transition-all ${
+                    previewDevice === 'tablet'
+                      ? 'bg-gray-700 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  title="Tablet Preview"
+                >
+                  <Tablet className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPreviewDevice('mobile')}
+                  className={`px-2.5 py-1 rounded-md transition-all ${
+                    previewDevice === 'mobile'
+                      ? 'bg-gray-700 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  title="Mobile Preview"
+                >
+                  <Smartphone className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
 
-            <button
-              onClick={savePlayground}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white transition-all"
-            >
-              <Save className="h-4 w-4" />
-              <span className="text-sm">Save</span>
-            </button>
+            {/* Right Section - All Tools and Actions */}
+            <div className="flex items-center gap-2">
+              {/* Panel Toggles */}
+              <button
+                onClick={() => setActivePanel(activePanel === 'files' ? null : 'files')}
+                className={`p-2 rounded-lg transition-all ${
+                  activePanel === 'files'
+                    ? 'bg-gray-700 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                title="File Explorer"
+              >
+                <FolderOpen className="h-4 w-4" />
+              </button>
 
-            <button
-              onClick={deployToVercel}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg shadow-purple-600/25"
-            >
-              <Zap className="h-4 w-4" />
-              <span className="text-sm font-medium">Deploy</span>
-            </button>
+              <button
+                onClick={() => setActivePanel(activePanel === 'ai' ? null : 'ai')}
+                className={`p-2 rounded-lg transition-all ${
+                  activePanel === 'ai'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                title="AI Assistant"
+              >
+                <Sparkles className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={() => setActivePanel(activePanel === 'stripe' ? null : 'stripe')}
+                className={`p-2 rounded-lg transition-all ${
+                  activePanel === 'stripe'
+                    ? 'bg-green-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                title="Stripe Payments"
+              >
+                <CreditCard className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={() => setActivePanel(activePanel === 'integrations' ? null : 'integrations')}
+                className={`p-2 rounded-lg transition-all ${
+                  activePanel === 'integrations'
+                    ? 'bg-gray-700 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                title="Integrations"
+              >
+                <Key className="h-4 w-4" />
+              </button>
+
+              <div className="h-6 w-px bg-gray-700" />
+
+              {/* Actions */}
+              <button
+                onClick={() => setLiveEditMode(!liveEditMode)}
+                className={`p-2 rounded-lg transition-all ${
+                  liveEditMode
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+                title="Live Edit Mode"
+              >
+                <Edit3 className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={savePlayground}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                title="Save (Ctrl+S)"
+              >
+                <Save className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={deployToGitHub}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                title="Push to GitHub"
+              >
+                <Github className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={deployToVercel}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg shadow-purple-600/25"
+                title="Deploy to Production"
+              >
+                <Zap className="h-4 w-4" />
+                <span className="text-sm font-medium">Deploy</span>
+              </button>
+
+              <div className="h-6 w-px bg-gray-700" />
+
+              <button
+                onClick={() => setShowPricing(true)}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                title="Upgrade Plan"
+              >
+                <Crown className="h-4 w-4" />
+              </button>
+
+              <button
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                title="Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </header>
 
         {/* Content Area */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel */}
+          {/* Left Panel - Cleaner Design */}
           {activePanel && (
-            <aside className="w-96 border-r border-gray-800 bg-gray-900/50 flex flex-col">
-              <div className="p-4 border-b border-gray-800">
+            <aside className="w-80 border-r border-gray-800 bg-gray-900/50 flex flex-col">
+              <div className="p-4 border-b border-gray-800 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                   {activePanel === 'ai' && <><Sparkles className="h-4 w-4 text-purple-400" /> AI Assistant</>}
                   {activePanel === 'stripe' && <><CreditCard className="h-4 w-4 text-green-400" /> Stripe Payments</>}
                   {activePanel === 'files' && <><FolderOpen className="h-4 w-4 text-blue-400" /> File Explorer</>}
                   {activePanel === 'integrations' && <><Key className="h-4 w-4 text-yellow-400" /> Integrations</>}
                 </h3>
+                <button
+                  onClick={() => setActivePanel(null)}
+                  className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
               
               <div className="flex-1 overflow-auto">
